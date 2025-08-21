@@ -6,12 +6,17 @@ subtitle: PhD Student in AI
 
 profile:
   align: right
-  image: LR_photo1.jpeg
+  image: LR_photo2.jpeg
   image_circular: false # crops the image to make it circular
   # more_info: >
   #   <p>555 your office number</p>
   #   <p>123 your address street</p>
   #   <p>Your City, State 12345</p>
+
+latest_posts:
+  enabled: true
+  scrollable: true # adds a vertical scroll bar if there are more than 3 new posts items
+  limit: 3 # leave blank to include all the blog posts
 
 selected_papers: true # includes a list of papers marked as "selected={true}"
 social: true # includes social icons at the bottom of the page
@@ -20,11 +25,6 @@ announcements:
   enabled: false # includes a list of news items
   scrollable: true # adds a vertical scroll bar if there are more than 3 news items
   limit: 5 # leave blank to include all the news in the `_news` folder
-
-latest_posts:
-  enabled: true
-  scrollable: true # adds a vertical scroll bar if there are more than 3 new posts items
-  limit: 3 # leave blank to include all the blog posts
 ---
 
 I am a 1st-year PhD student in the National PhD in Artificial Intelligence, working at University of Verona under the supervision of prof. [Rosalba Giugno](https://www.di.univr.it/?ent=persona&id=35790) at the [InfOmics](https://infomics.github.io/InfOmics/) lab. I work on **DNA sequence modeling**, with a particular focus on recurrent architectures and [mechanistic interpretability](https://en.wikipedia.org/wiki/Mechanistic_interpretability). My research explores how modern machine learning architectures can provide insights into biological sequences and their underlying mechanisms. 

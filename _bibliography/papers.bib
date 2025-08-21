@@ -1,9 +1,47 @@
 ---
 ---
 
-@string{aps = {American Physical Society,}}
 
-@book{einstein1920relativity,
+@INPROCEEDINGS{11081563,
+  author={Ruggeri, Lorenzo and Viesi, Eva and Betti, Andrea and Giugno, Rosalba},
+  booktitle={2025 IEEE 13th International Conference on Healthcare Informatics (ICHI)},
+  abstract={Traditional drug discovery is a long and costly process with a low success rate. Drug repurposing (DR) offers a promising alternative by leveraging existing drugs with known safety profiles. Network-based DR models have gained attention for their ability to integrate diverse types of biological and clinical data. However, effectively combining such heterogeneous data remains a significant challenge. We propose Gene-Drug-Disease-Bidirectional Encoder Representations from Transformers (GDD-BERT), an AI model designed to identify drug-gene-disease interactions, aiding drug repositioning. It utilizes BERTwalk, a novel embedding technique based on BERT, to generate vector representations of nodes in biological networks by analyzing complex relationships through random walks. These embeddings are combined into drug-gene-disease triplets, which are used in a classifier to predict potential interactions, such as a drug targeting a protein or a protein’s link to a disease. GDD-BERT efficiently reconstructs missing interactions and excels in sparse networks, outperforming traditional methods in discovering new therapeutic applications for drugs.},
+  title={Unveiling Novel Gene-Drug-Disease Interactions with GDD-BERT}, 
+  year={2025},
+  volume={},
+  number={},
+  pages={39-47},
+  keywords={Drugs;Proteins;Biological system modeling;Transformers;Vectors;Robustness;Drug discovery;Safety;Biological information theory;Diseases;Drug repurposing;Biological networks;Interaction prediction;AI models},
+  doi={10.1109/ICHI64645.2025.00014},
+  url={https://ieeexplore.ieee.org/abstract/document/11081563},
+  eprint={https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=11081563},
+  selected={true},
+  preview={gddbert.gif}
+}
+
+@article{10.1093/bib/bbaf363,
+    author = {Tognon, Manuel and Kumbara, Alisa and Betti, Andrea and Ruggeri, Lorenzo and Giugno, Rosalba},
+    title = {Benchmarking transcription factor binding site prediction models: a comparative analysis on synthetic and biological data},
+    journal = {Briefings in Bioinformatics},
+    volume = {26},
+    number = {4},
+    pages = {bbaf363},
+    year = {2025},
+    month = {07},
+    abstract = {Transcription factors (TFs) are essential regulatory proteins controlling the cellular transcriptional states by binding to specific DNA sequences known as transcription factor binding sites (TFBSs) or motifs. Accurate TFBS identification is crucial for unraveling regulatory mechanisms driving cellular dynamics. Over the years, various computational approaches have been developed to model TFBSs, with position weight matrices (PWMs) being one of the most widely adopted methods. PWMs provide a probabilistic framework by representing nucleotide frequencies at every position within the binding site. While effective and interpretable, PWMs face significant limitations, such as their inability to capture positional dependencies or model complex interactions. To address these, advanced methods, like support vector machine (SVM)–based, and deep learning (DL)–based models, have been introduced. Leveraging human ChIP-seq data from ENCODE, we systematically benchmarked the predictive performance of PWM, SVM-, and DL-based models across different scenarios. We evaluate the impact of key factors such as training dataset size, sequence length, and kernel functions (for SVMs) on models’ performance. Additionally, we explore the impact of synthetic versus real biological background data during model training. Our analysis highlights strengths and limitations of each approach under different conditions, providing practical guidance for selecting and tailoring models to specific biological datasets. To complement our analysis, we present a comprehensive database of pretrained SVM models for TFBS detection, trained on human ChIP-seq data from diverse cell lines and tissues. This resource aims to facilitate broader adoption of SVM-based methods in TFBS prediction and enhance their practical utility in regulatory genomics research.},
+    issn = {1477-4054},
+    doi = {10.1093/bib/bbaf363},
+    url = {https://doi.org/10.1093/bib/bbaf363},
+    eprint = {https://academic.oup.com/bib/article-pdf/26/4/bbaf363/63836118/bbaf363.pdf},
+    selected = {true},
+    preview={benchmark.jpeg}
+}
+
+
+
+string{aps = {American Physical Society,}}
+
+book{einstein1920relativity,
   title={Relativity: the Special and General Theory},
   author={Einstein, Albert},
   year={1920},
@@ -11,7 +49,7 @@
   html={relativity.html}
 }
 
-@book{einstein1956investigations,
+book{einstein1956investigations,
   bibtex_show={true},
   title={Investigations on the Theory of the Brownian Movement},
   author={Einstein, Albert},
@@ -20,7 +58,7 @@
   preview={brownian-motion.gif}
 }
 
-@article{einstein1950meaning,
+article{einstein1950meaning,
   abbr={AJP},
   bibtex_show={true},
   title={The meaning of relativity},
@@ -33,7 +71,7 @@
   publisher={American Association of Physics Teachers}
 }
 
-@article{PhysRev.47.777,
+article{PhysRev.47.777,
   abbr={PhysRev},
   title={Can Quantum-Mechanical Description of Physical Reality Be Considered Complete?},
   author={Einstein*†, A. and Podolsky*, B. and Rosen*, N.},
@@ -61,7 +99,7 @@
   inspirehep_id = {3255}
 }
 
-@article{einstein1905molekularkinetischen,
+article{einstein1905molekularkinetischen,
   title={{\"U}ber die von der molekularkinetischen Theorie der W{\"a}rme geforderte Bewegung von in ruhenden Fl{\"u}ssigkeiten suspendierten Teilchen},
   author={Einstein, A.},
   journal={Annalen der physik},
@@ -72,7 +110,7 @@
   publisher={Wiley Online Library}
 }
 
-@article{einstein1905movement,
+article{einstein1905movement,
   abbr={Ann. Phys.},
   title={Un the movement of small particles suspended in statiunary liquids required by the molecular-kinetic theory 0f heat},
   author={Einstein, A.},
@@ -82,13 +120,13 @@
   year={1905}
 }
 
-@article{einstein1905electrodynamics,
+article{einstein1905electrodynamics,
   title={On the electrodynamics of moving bodies},
   author={Einstein, A.},
   year={1905}
 }
 
-@Article{einstein1905photoelectriceffect,
+Article{einstein1905photoelectriceffect,
   bibtex_show={true},
   abbr={Ann. Phys.},
   title="{{\"U}ber einen die Erzeugung und Verwandlung des Lichtes betreffenden heuristischen Gesichtspunkt}",
@@ -104,7 +142,7 @@
   award_name={Nobel Prize}
 }
 
-@book{przibram1967letters,
+book{przibram1967letters,
   bibtex_show={true},
   title={Letters on wave mechanics},
   author={Einstein, Albert and Schrödinger, Erwin and Planck, Max and Lorentz, Hendrik Antoon and Przibram, Karl},

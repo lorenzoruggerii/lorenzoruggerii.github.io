@@ -1,8 +1,8 @@
 ---
 layout: distill
-title: Circuit Tracing:\ An in-depth explanation about creating interpretability circuits
-description: How do we extract interpretability circuits from transcoders?
-tags: Mechanistic Interpretability, AI, Transformers
+title: "Circuit Tracing: An in-depth explanation about creating interpretability circuits"
+description: "How do we extract interpretability circuits from transcoders?"
+tags: [Mechanistic Interpretability, AI, Transformers]
 giscus_comments: true
 date: 2025-08-26
 featured: true
@@ -17,6 +17,7 @@ chart:
   vega_lite: true
 tikzjax: true
 typograms: true
+published: true
 
 authors:
   - name: Lorenzo Ruggeri

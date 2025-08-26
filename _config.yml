@@ -192,15 +192,6 @@ exclude:
 keep_files:
   - CNAME
   - .nojekyll
-
-# Front matter defaults
-defaults:
-  - scope:
-      path: ""
-      type: "posts"
-    values:
-      published: false
-
 # Plug-ins
 plugins:
   - jekyll-archives-v2
@@ -227,6 +218,12 @@ defaults:
       path: "assets"
     values:
       sitemap: false
+      defaults:
+  - scope:
+      path: ""
+      type: "posts"
+    values:
+      published: false
 
 sass:
   style: compressed

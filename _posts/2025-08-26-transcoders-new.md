@@ -68,20 +68,20 @@ _styles: >
 
 ## Introduction
 
-## Transcoders
+## What is a Transcoder?
 
 Transcoders <d-cite key="dunefsky2024"></d-cite> are a new way of peeking inside the black box of transformers. Traditionally, researches have used sparse autoencoders (SAEs) <d-cite key="cunningham2023"></d-cite> to make sense of model activations, since SAEs break down the hidden states (i.e. the residual stream) of large language models into interpretable "features". But there's a catch: while SAEs often uncover meaningful features, they don't tell us much about how those features flow through the MLP and attention blocks of a transformers. That's where transcoders come in. A transcoder is trained to imitate an MLP layer's input-output behavior using a wide, sparsely-activating approximation. 
 The transcoder architecture allows us to separate features' attribution into input-dependent and input-invariant components. Crucially, the input-invariance is key - it lets us ask general questions about how features connect and transform, rather than chasing explanations that only apply to specific examples. This gives us a powerful tool for understaning how features interact inside transformers, allowing us to construct interpretability circuits.
 
 ## Transcoder's Architecture
 
-At its core, a transcoder is a simple but powerful idea: we replace a transformer's original MLP sublayer with a wider, sparse approximation that is (hopefully) easier to interpret. Concretely, a transcoder is just a one-hidden-layer ReLU MLP that learns to mimic the input-output behavior of the original MLP. Given an input activation vector $ x \in \mathbb{R}^{d\_{\text{model}}} $ the transcoder computes an intermediate sparse feature vector:
+At its core, a transcoder is a simple but powerful idea: we replace a transformer's original MLP sublayer with a wider, sparse approximation that is (hopefully) easier to interpret. Concretely, a transcoder is just a one-hidden-layer ReLU MLP that learns to mimic the input-output behavior of the original MLP. Given an input activation vector $x \in \mathbb{R}^{d_{\text{model}}}$ the transcoder computes an intermediate sparse feature vector:
 
 $$
 z_{\text{TC}}(x) = \text{ReLU}({W_{\text{enc}}}x) + b_{\text{enc}}
 $$
 
-where $ W*{\text{enc}} \in \mathbb{R}^{d*\text{features} \times d*{\text{model}}} $ maps the input into a higher-dimensional "feature space" ($ d*{\text{features}} \gg d*{\text{model}} $) and $ b*{\text{enc}} $ is a bias term. Each component of $ z\_{\text{TC}}(x) $ represents the activation of a sparse feature.
+where $W*{\text{enc}} \in \mathbb{R}^{d_\text{features} \times d_{\text{model}}}$ maps the input into a higher-dimensional "feature space" ($d*{\text{features}} \gg d_{\text{model}}$) and $b*{\text{enc}}$ is a bias term. Each component of $z\_{\text{TC}}(x)$ represents the activation of a sparse feature.
 
 The decoder stage then maps these features back into the model's hidden space:
 
@@ -89,7 +89,7 @@ $$
 \text{TC}(x) = W_{\text{dec}}z_{\text{TC}}(x) + b_{\text{dec}},
 $$
 
-where $ W*{\text{dec}} \in \mathbb{R}^{d*{\text{model}} \times {d*{\text{features}}}} $ and $ b*{\text{dec}} $ reconstruct the MLP's output. Intuitively, the encoder decides _which features should fire_, while the decoder decides _how each feature contributes_ to the final output.
+where $W_{\text{dec}} \in \mathbb{R}^{d_{\text{model}} \times {d_{\text{features}}}}$ and $b_{\text{dec}}$ reconstruct the MLP's output. Intuitively, the encoder decides _which features should fire_, while the decoder decides _how each feature contributes_ to the final output.
 
 To train transcoders, we minimize a loss that balances **faithfulness** to the original MLP with **sparsity** of activations:
 
@@ -103,16 +103,16 @@ In short, transcoders trade a little extra width for a lot of interpretability: 
 
 ## Circuit tracing
 
-With transcoders in hand, we can go a step further and actually trace the circuits that transformers use to solve tasks. The idea is simple: instead of asking how individual neurons connect, we ask how features discovered by transcoders in one layer connect to features in later layers. Suppose we found a feature in layer $ \text{l'} $ that activates on certain tokens with a clear pattern (for example, semicolons after a year token <d-footnote>like in (Einstein 1946<strong>;</strong> Feynman 1947<strong>;</strong>)</d-footnote> ). Now we want to know which features fire in all layers $ \text{l}, \text{l} \lt \text{l'} $. In other words: what makes that feature fire in layer $ \text{l'} $? Is it just the semicolon or there is some information coming from previous tokens? To do this, we treat the model as a graph of computations and try to extract the subgraph that’s truly responsible for that given behavior. That requires a way of scoring each connection: how much do the attention heads and the MLP layers contribute to one feature’s activation?
+With transcoders in hand, we can go a step further and actually trace the circuits that transformers use to solve tasks. The idea is simple: instead of asking how individual neurons connect, we ask how features discovered by transcoders in one layer connect to features in later layers. Suppose we found a feature in layer $\text{l'}$ that activates on certain tokens with a clear pattern (for example, semicolons after a year token <d-footnote>like in (Einstein 1946<strong>;</strong> Feynman 1947<strong>;</strong>)</d-footnote> ). Now we want to know which features fire in all layers $\text{l}, \text{l} \lt \text{l'}$. In other words: what makes that feature fire in layer $\text{l'}$? Is it just the semicolon or there is some information coming from previous tokens? To do this, we treat the model as a graph of computations and try to extract the subgraph that’s truly responsible for that given behavior. That requires a way of scoring each connection: how much do the attention heads and the MLP layers contribute to one feature’s activation?
 
 <!-- Put the image of the circuit finding algorithm -->
 
 ### Computing the Attributions between Transcoder Feature Pairs
 
-To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}_{\text{TC}} (x^{(l,t)}_{\text{mid}})$ denote the scalar activation of the $ \text{i-th} $ feature in the layer $ l $ transcoder on token $ t $, given the MLP input $ x^{(l, t)}\_{\text{mid}} $. Then for $ l \lt l' $ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
+To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ denote the scalar activation of the $\text{i-th}$ feature in the layer $ l $ transcoder on token $ t $, given the MLP input $x^{(l, t)}_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
 
 $$
-z^{(l,i)}_{\text{TC}}\!\left(x^{(l,t)}_{\text{mid}}\right)
+z^{(l,i)}_{\text{TC}}\left(x^{(l,t)}_{\text{mid}}\right)
 \cdot
 \left( f^{(l,i)}_{\text{dec}} \cdot f^{(l',i')}_{\text{enc}} \right)
 \tag{1}
@@ -120,8 +120,8 @@ $$
 
 Here:
 
-- $z^{(l,i)}_{\text{TC}} (x^{(l,t)}_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
-- $f^{(l,i)}_{\text{dec}} \cdot f^{(l',i')}_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
+- $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
+- $f^{(l,i)}_{\text{dec}}\cdot f^{(l',i')}_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
 
 This clean factorization gives us the best of both worlds:
 
@@ -137,7 +137,7 @@ $$
 where $f_{\text{enc}}^{(l', i')}$ is the $ i-th $ row of $W_{\text{enc}}$ for the layer $ l' $ transcoder and $b_{\text{enc}}^{(l', i')}$ is the learned encoder bias for feature $ i' $ in the layer $ l' $ transcoder. Now, we know that this feature is active (i.e. $z_{\text{TC}}^{(l', i')}(x_{\text{mid}}^{(l', t)}) \gt 0$) and it's reasonable to assume that this firing is not given by the bias term. We can therefore ignore $b_{\text{enc}}^{(l', i')}$. Then, since $z_{\text{TC}}^{(l', i')}(x_{\text{mid}}^{(l', t)}) \gt 0$ we can further ignore the $ \text{ReLU} $, leaving us only with:
 
 $$
-z_{\text{TC}}^{(l', i')}(x_{\text{mid}}^{l', t}) \approx f_{\text{enc}}^{(l', i')} \cdot x_{\text{mid}}^{(l', t)}
+z_{\text{TC}}^{(l', i')}(x_{\text{mid}}^{(l', t)}) \approx f_{\text{enc}}^{(l', i')} \cdot x_{\text{mid}}^{(l', t)}
 $$
 
 Thanks to the _residual connections_ in transformers $x_{\text{mid}}^{(l', t)}$ can be decomposed as the sum of the outputs of all previous components in the model (MLPs and Attention blocks). For instance, in a two-layer model, if $x_{\text{mid}}^{(2, t)}$ is the input for the second MLP sublayer:
@@ -190,6 +190,41 @@ where we have just put $f_{\text{enc}}^{(l', i')}$ inside the parenthesis since 
 </div>
 
 ### Computing the Attributions through Attention Heads
+
+So far, we have focused on tracing how a lower-layer transcoder feature directly contributes to a higher-layer transcoder feature at the same token position. However, transcoder features can also be mediated by **attention heads**, which requires us to extend the analysis. Attention can be decomposed into two circuits, a QK (query-key) circuit, which decides _where_ to move information from and to, and the OV (output-value) circuit, which decides _what_ information to move <d-footnote>you can read more [here](https://transformer-circuits.pub/2021/framework/index.html)</d-footnote>.
+Specifically, we now want to compute the attribution of transcoder features through the **OV (output-value) circuit** of an attention head. To do this, we treat the QK circuit scores as fixed, and only look at the contributions through the OV circuit.
+As before, our goal is to explain what causes feature $i'$ in the transcoder at layer $l'$ to activate on token $t$. Given an attention head $h$ at layer $l$ (with $l \lt l'$), the same reasoning as in the direct case shows that the head's contribution to feature $i'$ is given by:
+
+$$
+f^{(l',i')}_{\text{enc}} \cdot \text{attn}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}; x^{(l,1:t)}_{\text{pre}}\big) \tag{6}
+$$
+
+This can be decomposed into a sum over source tokens $s$:
+
+$$
+f^{(l',i')}_{\text{enc}} \cdot \sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}} \tag{7}
+$$
+
+$$
+=\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, \big(f^{(l',i')}_{\text{enc}}\big)^{T}W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}} \tag{8}
+$$
+
+$$
+=\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, \big(\big(W^{(l,h)}_{\text{OV}}\big)^{T}f^{(l',i')}_{\text{enc}}\big) \cdot x^{(l,s)}_{\text{pre}} \tag{9}
+$$
+
+where from (7) to (8) we put $f^{(l',i')}_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
+
+Thus, the contribution of source token $s$ at layer $l$ through head $h$ can be written as:
+
+$$
+\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, \big(\big(W^{(l,h)}_{\text{OV}}\big)^\top f^{(l',i')}_{\text{enc}}\big) \cdot x^{(l,s)}_{\text{pre}} \tag{10}
+$$
+
+So now, for a given feature $i'$ that fires in layer $l'$ on token $t$, we can now trace back **all its influences**. We can calculate the contribution from every previous-layer feature (Equation 5) and from any source token $s$, with $s \lt t$, processed from attention head $h$ (Equation 10).
+
+The final step is to note that $x^{(l,s)}_{\text{pre}}$ itself can be decomposed again into the output of MLP sublayers and attention heads, allowing us to recurse back until the token embeddings.
+To visualize this better, assume that you know that on layer 8 feature 2020 is firing on token 5. You apply Equation (5) and you find that most of the contribution is coming from feature 1546 in layer 4, activating on token 5. Your next question is: why is feature 1546 activating? So, given equations 5 and 10, you can recurse back, constructing a computational graph, until you get to the first layer of your model, in which you can see the tokens that make your feature fire. In the next subsection, I'll explain how to get the attribution graph.
 
 ### Tracing Features Back
 

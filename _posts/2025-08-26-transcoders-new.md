@@ -101,11 +101,18 @@ where the first term ensures the transcoder closedly matches the true MLP output
 
 In short, transcoders trade a little extra width for a lot of interpretability: they give us a sparse, feature-level view of how information flows through MLP sublayers, without losing track of the original model's computations.
 
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/transcoders/transcoders_architecture.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 1. Difference between SAEs and transcoders</strong>. SAEs learn to reconstruct model activations, whereas transcoders imitate sublayers’ input-output behavior.
+</div>
+
 ## Circuit tracing
 
 With transcoders in hand, we can go a step further and actually trace the circuits that transformers use to solve tasks. The idea is simple: instead of asking how individual neurons connect, we ask how features discovered by transcoders in one layer connect to features in later layers. Suppose we found a feature in layer $\text{l'}$ that activates on certain tokens with a clear pattern (for example, semicolons after a year token <d-footnote>like in (Einstein 1946<strong>;</strong> Feynman 1947<strong>;</strong>)</d-footnote> ). Now we want to know which features fire in all layers $\text{l}, \text{l} \lt \text{l'}$. In other words: what makes that feature fire in layer $\text{l'}$? Is it just the semicolon or there is some information coming from previous tokens? To do this, we treat the model as a graph of computations and try to extract the subgraph that’s truly responsible for that given behavior. That requires a way of scoring each connection: how much do the attention heads and the MLP layers contribute to one feature’s activation?
-
-<!-- Put the image of the circuit finding algorithm -->
 
 ### Computing the Attributions between Transcoder Feature Pairs
 
@@ -186,12 +193,12 @@ where we have just put $f_{\text{enc}}^{(l', i')}$ inside the parenthesis since 
     </div>
 </div>
 <div class="caption">
-    <strong>Fig: 1. Attribution between Transcoder Feature Pairs</strong>. Here we are calculating the attribution of feature j in layer l with respect to feature i' in layer l'. The attribution is given by Equation 5.
+    <strong>Fig: 2. Attribution between Transcoder Feature Pairs</strong>. Here we are calculating the attribution of feature j in layer l with respect to feature i' in layer l'. The attribution is given by Equation 5.
 </div>
 
 ### Computing the Attributions through Attention Heads
 
-So far, we have focused on tracing how a lower-layer transcoder feature directly contributes to a higher-layer transcoder feature at the same token position. However, transcoder features can also be mediated by **attention heads**, which requires us to extend the analysis. Attention can be decomposed into two circuits, a QK (query-key) circuit, which decides _where_ to move information from and to, and the OV (output-value) circuit, which decides _what_ information to move <d-footnote>you can read more <a href=https://transformer-circuits.pub/2021/framework/index.html>here</a></d-footnote>.
+So far, we have focused on tracing how a lower-layer transcoder feature directly contributes to a higher-layer transcoder feature at the same token position. However, transcoder features can also be mediated by **attention heads**, which requires us to extend the analysis. Attention can be decomposed into two circuits, a QK (query-key) circuit, which decides _where_ to move information from and to, and the OV (output-value) circuit, which decides _what_ information to move <d-cite key="elhage2021"></d-cite>.
 Specifically, we now want to compute the attribution of transcoder features through the **OV (output-value) circuit** of an attention head. To do this, we treat the QK circuit scores as fixed, and only look at the contributions through the OV circuit.
 As before, our goal is to explain what causes feature $i'$ in the transcoder at layer $l'$ to activate on token $t$. Given an attention head $h$ at layer $l$ (with $l \lt l'$), the same reasoning as in the direct case shows that the head's contribution to feature $i'$ is given by:
 
@@ -232,7 +239,7 @@ To visualize this better, assume that you know that on layer 8 feature 2020 is f
     </div>
 </div>
 <div class="caption">
-    <strong>Fig: 2. Attribution through attention heads</strong>. Here we are calculating the attribution of token s through attention head h in layer l with respect to feature i' in layer l'. The attribution is given by Equation 10.
+    <strong>Fig: 3. Attribution through attention heads</strong>. Here we are calculating the attribution of token s through attention head h in layer l with respect to feature i' in layer l'. The attribution is given by Equation 10.
 </div>
 
 ### Tracing Features Back
@@ -240,7 +247,8 @@ To visualize this better, assume that you know that on layer 8 feature 2020 is f
 So far, we've seen how to calculate the attribution from an earlier-layer transcoder feature or attention head to a later-layer feature. But that's only half of the story. To truly understand the model's behavior, we need to flip the perspective: **what contributes to these earlier-layer features or heads in the first place?**
 
 This bring us to the idea of **recursive attribution tracing**, that can be expressed as follows:
->Starting from the final feature vector we care about (e.g. $f\_{enc}^{(l', i')}$ for $i$-th feature in layer $l'$) we move backwards step by step. At each node - earlier transcoder feature or attention head - we compute how much that node contributes to the current feature vector using Equations 5 and 10. We than update our feature vector accordingly and continue tracing backwards until we reach the inputs.
+
+> Starting from the final feature vector we care about (e.g. $f\_{enc}^{(l', i')}$ for $i$-th feature in layer $l'$) we move backwards step by step. At each node - earlier transcoder feature or attention head - we compute how much that node contributes to the current feature vector using Equations 5 and 10. We than update our feature vector accordingly and continue tracing backwards until we reach the inputs.
 
 Now, why do we need to update the feature vector step? Recall that we are calculating attributions for a particular feature in a given layer computing the inner product beween its **feature vector** and its inputs $f\_{\text{enc}}^{(l', i')} \cdot x\_{\text{mid}}^{(l, t)}$. So the feature vector represents the lens thruogh with we measure attribution, and that lens changes as activations are transformed along the computational path <d-footnote>for example, traversing a linear layer</d-footnote>. If we held the same vector fixed everywhere, we'd be ignoring how each node remaps information. Consider a simple example: suppose a node $c$ takes an input $x$ and produces an output $y=Ax$ where $A$ is a weight matrix. If our current feature is $f'$, then the attribution of $c$ is $a' = f' \cdot y$ and assume that this attribution is significant. We therefore want to trace back again to understand what causes $c$ to activate. However, here it's not enough to reuse $f'$ directly, because $f'$ "lives" in the output space of $y$ not in the input space of $x$. Instead, we update the feature vector so that the original $a'$ attribution gets untouched:
 
@@ -260,24 +268,25 @@ $$
 When node $c$ is an attention head in layer $l$, we have $y = x\_{\text{mid}^{(l, t)}}$, so:
 
 $$
-a' = f' \cdot y = f' \cdot x\_{\text{mid}^{(l, t)}} = f' \cdot \sum_{h}\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}\
+a' = f' \cdot y = f' \cdot x\_{\text{mid}^{(l, t)}} = f' \cdot \sum_{h}\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}
 $$
 
 However, assume that we are tracing the attribution through head $h$ of a source token at position $s$. Therefore, we have $x = x\_{\text{pre}}^{(l, s)}$ and the updated feature vector will be:
 
 $$
-a' = f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}\
+a' = f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}
 $$
 
 $$
-= f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x\
+= f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x
 $$
 
 $$
-= \big(f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\big)\,x\
+= \big(f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\big)\,x
 $$
+
 $$
-= f\cdot\,x\
+= f \cdot x
 $$
 
 Hence:
@@ -290,37 +299,90 @@ $$
 In contrast, if $c$ is a transcoder feature then $y = x\_{\text{post}}^{(l, t)}$, so we have:
 
 $$
-a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \text{MLP}^{(l)}(x\_{\text{mid}}^{(l, t)}) \approx f' \cdot \text{TC}^{(l)}(x\_{\text{mid}}^{(l, t)}) = f' \cdot \sum\_{j}z\_{\text{TC}}^{(l, j)}(x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \text{MLP}^{(l)}(x\_{\text{mid}}^{(l, t)}) \approx f' \cdot \text{TC}^{(l)}(x\_{\text{mid}}^{(l, t)})
+$$
+
+$$
+= f' \cdot \sum_{j}z\_{\text{TC}}^{(l, j)}(x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
 $$
 
 Moreover, from the definition of transcoder, we have that $z\_{\text{TC}}^{(l, t)}(x\_{\text{mid}}^{(l, t)}) = f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)})$. Therefore, we obtain:
 
 $$
-a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \sum\_{j} f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+a' = f' \cdot x_{\text{post}}^{(l, t)} = f' \cdot \sum_{j} f_{\text{enc}}^{(l, j)} \cdot (x_{\text{mid}}^{(l, t)}) \cdot f_{\text{dec}}^{(l, j)}
 $$
 
 From this, we can just insert inside the sum $f'$ thanks to the linearity of the inner product:
 
 $$
-a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \sum\_{j} f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+a' = f' \cdot x_{\text{post}}^{(l, t)} = f' \cdot \sum_{j} f_{\text{enc}}^{(l, j)} \cdot (x_{\text{mid}}^{(l, t)}) \cdot f_{\text{dec}}^{(l, j)}
 $$
 
 $$
-=\sum\_{j} \big(f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)})\big) \cdot \big( f' \cdot f\_{\text{dec}}^{(l, j)}\big)
+=\sum_{j} \big(f_{\text{enc}}^{(l, j)} \cdot (x_{\text{mid}}^{(l, t)})\big) \cdot \big( f' \cdot f_{\text{dec}}^{(l, j)}\big)
 $$
 
 And from this, knowing that our $x = (x\_{\text{mid}}^{(l, t)})$ and assuming we are interested in the contribution of feature $j$ from layer $l$ it's easy to see that:
 
 $$
-f = \big( f' \cdot f\_{\text{dec}}^{(l, j)}\big) \cdot f\_{\text{enc}}^{(l, j)}
+f = \big( f' \cdot f_{\text{dec}}^{(l, j)}\big) \cdot f_{\text{enc}}^{(l, j)}
 \tag{13}
 $$
 
-There is, however, an important caveat. Transformer architectures insert a LayerNorm operation before every MLP and attention sublayer. This nonlinearity complicates attribution because it rescales and recenters activations. Fortunately, prior work provides intuition and justification for approximating LayerNorm as a linear scaling transformation. Neel Nanda [here](https://www.neelnanda.io/mechanistic-interpretability/attribution-patching) argues that it behaves roughly like multiplying the input by a constant, and Dunefsky & Cohan <d-cite key="dunefsky2024"></d-cite> provide both theoretical motivation and empirical evidence supporting this view. In practice, this means that when we update the feature vector $f$ at each sublayer, we multiply it by an empirically estimated _LayerNorm scaling constant_ defined as the ratio between the norm of the pre-LayerNorm activation vector and the post-LayerNorm activation vector.
+There is, however, an important caveat. Transformer architectures insert a LayerNorm operation before every MLP and attention sublayer. This nonlinearity complicates attribution because it rescales and recenters activations. Fortunately, prior work provides intuition and justification for approximating LayerNorm as a linear scaling transformation. Neel Nanda [here](https://www.neelnanda.io/mechanistic-interpretability/attribution-patching) argues that it behaves roughly like multiplying the input by a constant, and Dunefsky & Cohan <d-cite key="dunefsky2024a"></d-cite> provide both theoretical motivation and empirical evidence supporting this view. In practice, this means that when we update the feature vector $f$ at each sublayer, we multiply it by an empirically estimated _LayerNorm scaling constant_ defined as the ratio between the norm of the pre-LayerNorm activation vector and the post-LayerNorm activation vector.
 
+At this point, we're able to trace back our feature vector in any block of our transformer model. In other words, we're ready to **construct the attribution graph**!
 
 ### Computing the Attribution Graph
 
+The full circuit-finding algorithm is basically a way of “tracing back the breadcrumbs” to figure out which parts of a transformer are truly responsible for a feature lighting up. Imagine you notice a neuron firing strongly in a late layer — the algorithm asks: what earlier features, attention heads, or even embeddings made this happen? To answer that, it builds computational paths step by step, moving backwards through the network. At each step, it looks at all possible contributors, scores them by how much they mattered, and then keeps only the top few. This greedy approach means we don’t get lost in the exponential explosion of possible paths, but we still hang onto the most important ones. After running this process for several steps, you end up with a collection of “candidate stories” — paths that explain how the signal was built. But paths alone can be messy: the same node might appear in several different explanations, and if we just add everything up we’d double-count. That’s why the second stage of the algorithm takes all those paths and merges them into a single graph. In this graph, every node and every edge gets an attribution score that represents its total contribution across all explanations. And just to stay honest, we also allow for “error nodes” — placeholders that capture the fact that we didn’t include every possible path or that our approximations (like treating LayerNorm as linear) aren’t perfect. The end result is a clear, interpretable circuit diagram showing how the model built up the feature of interest.
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/transcoders/circuit_tracing.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 4. Full-circuit-finding algorithm</strong>. Taken from (Dunefsky et al., 2025)
+</div>
+
 ### An example using fairytales
+
+To make things more concrete, let’s look at an example drawn from a model I recently trained on TinyStories, a dataset of short fairytales. One of the most characteristic phrases in this dataset is the classic opening “Once upon a time”. The model reproduces this phrase frequently, and I was curious to see where in the network this pattern is “stored” and how it emerges.
+
+To start, I probed the activations inside the model when it processed this phrase. Looking specifically at the token “a” in “Once upon a time”, I found that feature 1932 in layer 1 showed particularly strong activation.
+
+<div class="l-page">
+  <iframe src="{{ '/assets/plotly/1932.html' | relative_url }}" frameborder='0' scrolling='no' height="500px" width="100%" style="border: 1px dashed grey;"></iframe>
+</div>
+<div class="caption">
+    <strong>Fig: 5. Feature 1932 activations</strong>. Activations of feature 1932 in 30 different generated sequences. Note how this feature activates on "a" when following "Once upon ".
+</div>
+
+Interestingly, whenever this feature lights up, the model becomes strongly biased towards predicting the token “time” as the next word. This suggests that feature 1932 has learned to specialize in carrying forward the “Once upon a … time” motif.
+
+To validate this hypothesis, I ran an intervention: I manually activated feature 1932 in contexts where it would not normally fire. Here, no matter the surrounding text, the model tried to output “time” immediately afterward.
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/transcoders/time.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 6. Effect of Feature 1932 on prompt "This is a "</strong>. See how the model shiftes completely its predictions once feature 1932 is activated. Just by activating that group of neurons in layer 1, the model wants to output "time" with 99% confidence.
+</div>
+
+This confirms that the feature does not simply correlate with the training distribution, but actually plays a causal role in driving the model toward producing this phrase.
+
+Going deeper, I also used the circuit-finding method described earlier to trace which components contribute to the activation of feature 1932. Two particularly clear computational paths emerged:
+
+- Path 1: `mlp1@2@2 ← mlp0tc[2915]@2: 2.8 ← attn0[3]@0: 0.24`
+- Path 2: `mlp1@2@2 ← mlp0tc[2915]@2: 2.8 ← attn0[2]@1: 0.21`
+
+This notation means that feature 1932 in layer 1 is being modulated by **feature 2915 in layer 0**, which itself receives contributions from **attention head 3 at token position 0** and **attention head 2 at token position 1**. In plain language: the feature that predicts _“time”_ is activated through a chain that depends on the tokens _“once”_ and _“upon”_.
+
+Altogether, this paints a coherent picture. The model has carved out a small, interpretable circuit that detects the prefix _“once upon a …”_ and channels this information forward to bias the output toward _“time”_. In other words, the phrase _“Once upon a time”_ has been distilled into a **mechanistic substructure** inside the model.
+
+This example highlights the promise of feature- and circuit-level interpretability: even in a small two-layer transformer, we can begin to see how specific linguistic motifs are encoded, propagated, and ultimately expressed in the model’s predictions.
 
 ## Conclusions

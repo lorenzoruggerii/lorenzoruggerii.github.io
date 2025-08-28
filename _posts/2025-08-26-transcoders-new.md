@@ -191,7 +191,7 @@ where we have just put $f_{\text{enc}}^{(l', i')}$ inside the parenthesis since 
 
 ### Computing the Attributions through Attention Heads
 
-So far, we have focused on tracing how a lower-layer transcoder feature directly contributes to a higher-layer transcoder feature at the same token position. However, transcoder features can also be mediated by **attention heads**, which requires us to extend the analysis. Attention can be decomposed into two circuits, a QK (query-key) circuit, which decides _where_ to move information from and to, and the OV (output-value) circuit, which decides _what_ information to move <d-footnote>you can read more [here](https://transformer-circuits.pub/2021/framework/index.html)</d-footnote>.
+So far, we have focused on tracing how a lower-layer transcoder feature directly contributes to a higher-layer transcoder feature at the same token position. However, transcoder features can also be mediated by **attention heads**, which requires us to extend the analysis. Attention can be decomposed into two circuits, a QK (query-key) circuit, which decides _where_ to move information from and to, and the OV (output-value) circuit, which decides _what_ information to move <d-footnote>you can read more <a href=https://transformer-circuits.pub/2021/framework/index.html>here</a></d-footnote>.
 Specifically, we now want to compute the attribution of transcoder features through the **OV (output-value) circuit** of an attention head. To do this, we treat the QK circuit scores as fixed, and only look at the contributions through the OV circuit.
 As before, our goal is to explain what causes feature $i'$ in the transcoder at layer $l'$ to activate on token $t$. Given an attention head $h$ at layer $l$ (with $l \lt l'$), the same reasoning as in the direct case shows that the head's contribution to feature $i'$ is given by:
 
@@ -213,7 +213,7 @@ $$
 =\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, \big(\big(W^{(l,h)}_{\text{OV}}\big)^{T}f^{(l',i')}_{\text{enc}}\big) \cdot x^{(l,s)}_{\text{pre}} \tag{9}
 $$
 
-where from (7) to (8) we put $f^{(l',i')}_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
+where from (7) to (8) we put $f^{(l',i')}\_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}\_{\text{pre}}, x^{(l,s)}\_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
 
 Thus, the contribution of source token $s$ at layer $l$ through head $h$ can be written as:
 
@@ -236,6 +236,88 @@ To visualize this better, assume that you know that on layer 8 feature 2020 is f
 </div>
 
 ### Tracing Features Back
+
+So far, we've seen how to calculate the attribution from an earlier-layer transcoder feature or attention head to a later-layer feature. But that's only half of the story. To truly understand the model's behavior, we need to flip the perspective: **what contributes to these earlier-layer features or heads in the first place?**
+
+This bring us to the idea of **recursive attribution tracing**, that can be expressed as follows:
+>Starting from the final feature vector we care about (e.g. $f\_{enc}^{(l', i')}$ for $i$-th feature in layer $l'$) we move backwards step by step. At each node - earlier transcoder feature or attention head - we compute how much that node contributes to the current feature vector using Equations 5 and 10. We than update our feature vector accordingly and continue tracing backwards until we reach the inputs.
+
+Now, why do we need to update the feature vector step? Recall that we are calculating attributions for a particular feature in a given layer computing the inner product beween its **feature vector** and its inputs $f\_{\text{enc}}^{(l', i')} \cdot x\_{\text{mid}}^{(l, t)}$. So the feature vector represents the lens thruogh with we measure attribution, and that lens changes as activations are transformed along the computational path <d-footnote>for example, traversing a linear layer</d-footnote>. If we held the same vector fixed everywhere, we'd be ignoring how each node remaps information. Consider a simple example: suppose a node $c$ takes an input $x$ and produces an output $y=Ax$ where $A$ is a weight matrix. If our current feature is $f'$, then the attribution of $c$ is $a' = f' \cdot y$ and assume that this attribution is significant. We therefore want to trace back again to understand what causes $c$ to activate. However, here it's not enough to reuse $f'$ directly, because $f'$ "lives" in the output space of $y$ not in the input space of $x$. Instead, we update the feature vector so that the original $a'$ attribution gets untouched:
+
+$$
+a' = f' \cdot y = f' \cdot (Ax) = (f' \cdot A)x = f \cdot x
+\tag{11}
+$$
+
+So our new feature feature vector will be $f=f'\cdot A$. This way, $f$ is aligned with the input space and the attribution remains valid one step earlier in the graph. The same principles applies for MLP and Attention nodes that we have in the graph: the feature vector **must be updated to remain consistent** with the representation space of the preceding layer.
+
+So, in order to compute the new feature vector $f$ through node $c$ starting from $f'$ we'll use the following contraint given from Equation 11:
+
+$$
+a' = f' \cdot y = f \cdot x
+$$
+
+When node $c$ is an attention head in layer $l$, we have $y = x\_{\text{mid}^{(l, t)}}$, so:
+
+$$
+a' = f' \cdot y = f' \cdot x\_{\text{mid}^{(l, t)}} = f' \cdot \sum_{h}\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}\
+$$
+
+However, assume that we are tracing the attribution through head $h$ of a source token at position $s$. Therefore, we have $x = x\_{\text{pre}}^{(l, s)}$ and the updated feature vector will be:
+
+$$
+a' = f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}\
+$$
+
+$$
+= f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x\
+$$
+
+$$
+= \big(f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\big)\,x\
+$$
+$$
+= f\cdot\,x\
+$$
+
+Hence:
+
+$$
+f = f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}
+\tag{12}
+$$
+
+In contrast, if $c$ is a transcoder feature then $y = x\_{\text{post}}^{(l, t)}$, so we have:
+
+$$
+a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \text{MLP}^{(l)}(x\_{\text{mid}}^{(l, t)}) \approx f' \cdot \text{TC}^{(l)}(x\_{\text{mid}}^{(l, t)}) = f' \cdot \sum\_{j}z\_{\text{TC}}^{(l, j)}(x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+$$
+
+Moreover, from the definition of transcoder, we have that $z\_{\text{TC}}^{(l, t)}(x\_{\text{mid}}^{(l, t)}) = f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)})$. Therefore, we obtain:
+
+$$
+a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \sum\_{j} f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+$$
+
+From this, we can just insert inside the sum $f'$ thanks to the linearity of the inner product:
+
+$$
+a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \sum\_{j} f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+$$
+
+$$
+=\sum\_{j} \big(f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)})\big) \cdot \big( f' \cdot f\_{\text{dec}}^{(l, j)}\big)
+$$
+
+And from this, knowing that our $x = (x\_{\text{mid}}^{(l, t)})$ and assuming we are interested in the contribution of feature $j$ from layer $l$ it's easy to see that:
+
+$$
+f = \big( f' \cdot f\_{\text{dec}}^{(l, j)}\big) \cdot f\_{\text{enc}}^{(l, j)}
+\tag{13}
+$$
+
+There is, however, an important caveat. Transformer architectures insert a LayerNorm operation before every MLP and attention sublayer. This nonlinearity complicates attribution because it rescales and recenters activations. Fortunately, prior work provides intuition and justification for approximating LayerNorm as a linear scaling transformation. Neel Nanda [here](https://www.neelnanda.io/mechanistic-interpretability/attribution-patching) argues that it behaves roughly like multiplying the input by a constant, and Dunefsky & Cohan <d-cite key="dunefsky2024"></d-cite> provide both theoretical motivation and empirical evidence supporting this view. In practice, this means that when we update the feature vector $f$ at each sublayer, we multiply it by an empirically estimated _LayerNorm scaling constant_ defined as the ratio between the norm of the pre-LayerNorm activation vector and the post-LayerNorm activation vector.
+
 
 ### Computing the Attribution Graph
 

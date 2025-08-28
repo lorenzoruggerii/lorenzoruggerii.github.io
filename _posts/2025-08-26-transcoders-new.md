@@ -43,7 +43,7 @@ toc:
       - name: Computing the Attributions between Transcoder Feature Pairs
       - name: Computing the Attributions through Attention Heads
       - name: Tracing Features Back
-      - name: Compute the Attribution Graph
+      - name: Computing the Attribution Graph
       - name: An example using fairytales
   - name: Conclusions
 
@@ -81,7 +81,7 @@ $$
 z_{\text{TC}}(x) = \text{ReLU}({W_{\text{enc}}}x) + b_{\text{enc}}
 $$
 
-where $W*{\text{enc}} \in \mathbb{R}^{d_\text{features} \times d_{\text{model}}}$ maps the input into a higher-dimensional "feature space" ($d*{\text{features}} \gg d_{\text{model}}$) and $b*{\text{enc}}$ is a bias term. Each component of $z\_{\text{TC}}(x)$ represents the activation of a sparse feature.
+where $W_{\text{enc}} \in \mathbb{R}^{d_\text{features} \times d_{\text{model}}}$ maps the input into a higher-dimensional "feature space" ($d_{\text{features}} \gg d_{\text{model}}$) and $b_{\text{enc}}$ is a bias term. Each component of $z\_{\text{TC}}(x)$ represents the activation of a sparse feature.
 
 The decoder stage then maps these features back into the model's hidden space:
 
@@ -109,7 +109,7 @@ With transcoders in hand, we can go a step further and actually trace the circui
 
 ### Computing the Attributions between Transcoder Feature Pairs
 
-To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ denote the scalar activation of the $\text{i-th}$ feature in the layer $ l $ transcoder on token $ t $, given the MLP input $x^{(l, t)}_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
+To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}\_{\text{TC}}(x^{(l,t)}\_{\text{mid}})$ denote the scalar activation of the $i$-th feature in the layer $l$ transcoder on token $t$, given the MLP input $x^{(l, t)}\_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
 
 $$
 z^{(l,i)}_{\text{TC}}\left(x^{(l,t)}_{\text{mid}}\right)
@@ -120,8 +120,8 @@ $$
 
 Here:
 
-- $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
-- $f^{(l,i)}_{\text{dec}}\cdot f^{(l',i')}_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
+- $z^{(l,i)}\_{\text{TC}}(x^{(l,t)}\_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
+- $f^{(l,i)}\_{\text{dec}}\cdot f^{(l',i')}\_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
 
 This clean factorization gives us the best of both worlds:
 
@@ -225,6 +225,15 @@ So now, for a given feature $i'$ that fires in layer $l'$ on token $t$, we can n
 
 The final step is to note that $x^{(l,s)}_{\text{pre}}$ itself can be decomposed again into the output of MLP sublayers and attention heads, allowing us to recurse back until the token embeddings.
 To visualize this better, assume that you know that on layer 8 feature 2020 is firing on token 5. You apply Equation (5) and you find that most of the contribution is coming from feature 1546 in layer 4, activating on token 5. Your next question is: why is feature 1546 activating? So, given equations 5 and 10, you can recurse back, constructing a computational graph, until you get to the first layer of your model, in which you can see the tokens that make your feature fire. In the next subsection, I'll explain how to get the attribution graph.
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/transcoders/attn_attrib.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 2. Attribution through attention heads</strong>. Here we are calculating the attribution of token s through attention head h in layer l with respect to feature i' in layer l'. The attribution is given by Equation 10.
+</div>
 
 ### Tracing Features Back
 

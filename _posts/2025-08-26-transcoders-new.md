@@ -354,7 +354,7 @@ The full circuit-finding algorithm is basically a way of “tracing back the bre
 
 ### An example using fairytales
 
-To make things more concrete, let’s look at an example drawn from a model I recently trained on TinyStories, a dataset of short fairytales. One of the most characteristic phrases in this dataset is the classic opening “Once upon a time”. The model reproduces this phrase frequently, and I was curious to see where in the network this pattern is “stored” and how it emerges.
+To make things more concrete, let’s look at an example drawn from a model I recently trained on TinyStories, a dataset of short fairytales (you can find it [here](https://github.com/lorenzoruggerii/TinyTranscoder)). One of the most characteristic phrases in this dataset is the classic opening “Once upon a time”. The model reproduces this phrase frequently, and I was curious to see where in the network this pattern is “stored” and how it emerges.
 
 To start, I probed the activations inside the model when it processed this phrase. Looking specifically at the token “a” in “Once upon a time”, I found that feature 1932 in layer 1 showed particularly strong activation.
 

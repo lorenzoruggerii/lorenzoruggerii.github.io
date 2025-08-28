@@ -68,9 +68,15 @@ _styles: >
 
 ## Introduction
 
+Large language models can often feel like inscrutable black boxes: they generate text with astonishing fluency, but the internal computations that drive their outputs remain hidden from us. Recently, I came across the paper “Transformers Find Interpretable LLM Feature Circuits” <d-cite key="dunefsky2024"></d-cite>, and while the paper is beautifully written, I found myself struggling to grasp every piece of the math and methodology. That's why I decided to write this blog post: to break down the ideas, explain the math behind circuit finding, and provide a concrete, step-by-step view of how features, attention heads, and layers interact in a transformer.
+
+The key idea is to treat a model as a computational graph of interacting components. By tracing attribution scores through this graph, we can identify the contributions of earlier-layer features and heads to later-layer representations, and eventually reconstruct causal circuits inside the model. Along the way, I discuss the theoretical foundation for this approach, show how feature vectors must be updated as we traverse the graph, and present algorithms for discovering important computational paths.
+
+To make this more tangible, I finish with a case study on a small transformer trained on TinyStories, a dataset of fairytales. Here, interpretability techniques reveal exactly how the model encodes the familiar opening “Once upon a time”—uncovering the features and attention heads responsible for producing it.
+
 ## What is a Transcoder?
 
-Transcoders <d-cite key="dunefsky2024"></d-cite> are a new way of peeking inside the black box of transformers. Traditionally, researches have used sparse autoencoders (SAEs) <d-cite key="cunningham2023"></d-cite> to make sense of model activations, since SAEs break down the hidden states (i.e. the residual stream) of large language models into interpretable "features". But there's a catch: while SAEs often uncover meaningful features, they don't tell us much about how those features flow through the MLP and attention blocks of a transformers. That's where transcoders come in. A transcoder is trained to imitate an MLP layer's input-output behavior using a wide, sparsely-activating approximation. 
+Transcoders are a new way of peeking inside the black box of transformers. Traditionally, researches have used sparse autoencoders (SAEs) <d-cite key="cunningham2023"></d-cite> to make sense of model activations, since SAEs break down the hidden states (i.e. the residual stream) of large language models into interpretable "features". But there's a catch: while SAEs often uncover meaningful features, they don't tell us much about how those features flow through the MLP and attention blocks of a transformers. That's where transcoders come in. A transcoder is trained to imitate an MLP layer's input-output behavior using a wide, sparsely-activating approximation. 
 The transcoder architecture allows us to separate features' attribution into input-dependent and input-invariant components. Crucially, the input-invariance is key - it lets us ask general questions about how features connect and transform, rather than chasing explanations that only apply to specific examples. This gives us a powerful tool for understaning how features interact inside transformers, allowing us to construct interpretability circuits.
 
 ## Transcoder's Architecture
@@ -265,10 +271,10 @@ $$
 a' = f' \cdot y = f \cdot x
 $$
 
-When node $c$ is an attention head in layer $l$, we have $y = x\_{\text{mid}^{(l, t)}}$, so:
+When node $c$ is an attention head in layer $l$, we have $y = x\_{\text{mid}}^{(l, t)}$, so:
 
 $$
-a' = f' \cdot y = f' \cdot x\_{\text{mid}^{(l, t)}} = f' \cdot \sum_{h}\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}
+a' = f' \cdot y = f' \cdot x_{\text{mid}^{(l, t)}} = f' \cdot \sum_{h}\sum_{s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}
 $$
 
 However, assume that we are tracing the attribution through head $h$ of a source token at position $s$. Therefore, we have $x = x\_{\text{pre}}^{(l, s)}$ and the updated feature vector will be:
@@ -299,11 +305,11 @@ $$
 In contrast, if $c$ is a transcoder feature then $y = x\_{\text{post}}^{(l, t)}$, so we have:
 
 $$
-a' = f' \cdot x\_{\text{post}}^{(l, t)} = f' \cdot \text{MLP}^{(l)}(x\_{\text{mid}}^{(l, t)}) \approx f' \cdot \text{TC}^{(l)}(x\_{\text{mid}}^{(l, t)})
+a' = f' \cdot x_{\text{post}}^{(l, t)} = f' \cdot \text{MLP}^{(l)}(x_{\text{mid}}^{(l, t)}) \approx f' \cdot \text{TC}^{(l)}(x_{\text{mid}}^{(l, t)})
 $$
 
 $$
-= f' \cdot \sum_{j}z\_{\text{TC}}^{(l, j)}(x\_{\text{mid}}^{(l, t)}) \cdot f\_{\text{dec}}^{(l, j)}
+= f' \cdot \sum_{j}z_{\text{TC}}^{(l, j)}(x_{\text{mid}}^{(l, t)}) \cdot f_{\text{dec}}^{(l, j)}
 $$
 
 Moreover, from the definition of transcoder, we have that $z\_{\text{TC}}^{(l, t)}(x\_{\text{mid}}^{(l, t)}) = f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)})$. Therefore, we obtain:
@@ -353,7 +359,7 @@ To make things more concrete, let’s look at an example drawn from a model I re
 To start, I probed the activations inside the model when it processed this phrase. Looking specifically at the token “a” in “Once upon a time”, I found that feature 1932 in layer 1 showed particularly strong activation.
 
 <div class="l-page">
-  <iframe src="{{ '/assets/plotly/1932.html' | relative_url }}" frameborder='0' scrolling='no' height="500px" width="100%" style="border: 1px dashed grey;"></iframe>
+  <iframe src="{{ '/assets/plotly/1932.html' | relative_url }}" frameborder='0' scrolling='no' height="500px" width="80%" style="border: 1px dashed grey;"></iframe>
 </div>
 <div class="caption">
     <strong>Fig: 5. Feature 1932 activations</strong>. Activations of feature 1932 in 30 different generated sequences. Note how this feature activates on "a" when following "Once upon ".
@@ -386,3 +392,9 @@ Altogether, this paints a coherent picture. The model has carved out a small, in
 This example highlights the promise of feature- and circuit-level interpretability: even in a small two-layer transformer, we can begin to see how specific linguistic motifs are encoded, propagated, and ultimately expressed in the model’s predictions.
 
 ## Conclusions
+
+By following attributions backward through the network and systematically building computational paths into circuits, we gain a concrete picture of how language models organize knowledge internally. What initially appears as an opaque “black box” turns into a structured system of features, heads, and layers that cooperate to produce meaningful outputs.
+
+The case study on “Once upon a time” illustrates this beautifully: a specific feature in layer 1, modulated by lower-layer components attending to “once” and “upon”, reliably pushes the model to predict “time”. This shows that the model has not just memorized text, but carved out specialized circuits to handle recurring linguistic motifs.
+
+Of course, this is just one small example in a tiny model. The ultimate challenge is to scale these methods to much larger architectures and more abstract concepts, where the circuits will be deeper and more intertwined. Still, even in this setting, we see a glimpse of what is possible: by peeling back the layers of the network, we can begin to map out the hidden structures that give rise to language understanding.

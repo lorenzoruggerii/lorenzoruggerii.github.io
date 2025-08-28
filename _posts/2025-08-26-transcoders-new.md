@@ -359,7 +359,7 @@ To make things more concrete, let’s look at an example drawn from a model I re
 To start, I probed the activations inside the model when it processed this phrase. Looking specifically at the token “a” in “Once upon a time”, I found that feature 1932 in layer 1 showed particularly strong activation.
 
 <div class="l-page">
-  <iframe src="{{ '/assets/plotly/1932.html' | relative_url }}" frameborder='0' scrolling='no' height="500px" width="80%" style="border: 1px dashed grey;"></iframe>
+  <iframe src="{{ '/assets/plotly/1932.html' | relative_url }}" frameborder='0' scrolling='no' height="500px" width="100%" style="border: 1px dashed grey;"></iframe>
 </div>
 <div class="caption">
     <strong>Fig: 5. Feature 1932 activations</strong>. Activations of feature 1932 in 30 different generated sequences. Note how this feature activates on "a" when following "Once upon ".

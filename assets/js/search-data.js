@@ -38,7 +38,7 @@ ninja.data = [{
         
           title: 'Deciphering Transcription Factor Binding Sites with Wavelet Transforms and Deep Learning | by... <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
         
-        description: "Transcription factors (TFs) play a crucial role in gene regulation by binding to specific DNA sequences known as transcription factor binding sites (TFBS). Accurately identifying these sites is…",
+        description: "Deciphering Transcription Factor Binding Sites with Wavelet Transforms and Deep Learning Transcription factors (TFs) play a crucial role in gene regulation by binding to specific DNA sequences known …",
         section: "Posts",
         handler: () => {
           
@@ -50,16 +50,8 @@ ninja.data = [{
           description: "",
           section: "Books",handler: () => {
               window.location.href = "/books/the_godfather/";
-            },},{id: "news-a-simple-inline-announcement",
-          title: 'A simple inline announcement.',
-          description: "",
-          section: "News",},{id: "news-a-long-announcement-with-details",
-          title: 'A long announcement with details',
-          description: "",
-          section: "News",handler: () => {
-              window.location.href = "/news/announcement_2/";
-            },},{id: "news-a-simple-inline-announcement-with-markdown-emoji-sparkles-smile",
-          title: 'A simple inline announcement with Markdown emoji! :sparkles: :smile:',
+            },},{id: "news-robot-i-recently-gave-a-talk-at-the-ais-advanced-school-on-ai-and-intelligent-systems-2025-where-i-presented-on-state-space-models-ssms-and-their-employment-for-language-modeling-you-can-watch-the-full-presentation-here-video-link",
+          title: ':robot: I recently gave a talk at the AIS – Advanced School on...',
           description: "",
           section: "News",},{id: "projects-project-1",
           title: 'project 1',

@@ -29,7 +29,7 @@ Specifically, for that 15% of chosen words:
     </div>
 </div>
 <div class="caption">
-    <strong>Fig: 1. How BERT model behaves. Random tokens are masked from the input sequence, and the model is asked to identify them using the surrounding context.
+    <strong>Fig: 1. How BERT model behaves.</strong> Random tokens are masked from the input sequence, and the model is asked to identify them using the surrounding context.
 </div>
 
 By forcing the model to analyze these surrounding "clues" from both directions, MLM enables BERT to develop a much richer grasp of language nuances, syntax, and semantics. This is why BERT can easily distinguish between "bank" (a river) and "bank" (a financial institution) based entirely on the words sitting next to it.
@@ -74,7 +74,7 @@ where $$ \bar{Q}_{t} = Q_{1}Q_{2} \dots Q_{t} $$. So with $$ q\left(x_{t-1} \mid
 
 ## BERT is a one-step diffusion model
 
-Luckily for us, it can be shown <d-cite key="Sahoo2024-gl"></d-cite> that the Loss for a Discrete Diffusion model can be transformed into an MLM loss under the following conditions:
+Luckily for us, [it can be shown](https://s-sahoo.com/mdlm) that the Loss for a Discrete Diffusion model can be transformed into an MLM loss under the following conditions:
 
 1. **Zero-Masking Probabilities**: a clear input (i.e. an input token which is non-masked) is never masked.
 2. **Carry-Over Unmasking**: an unmasked token remains unchanged during reverse diffusion.
@@ -86,7 +86,7 @@ If so, the loss function can be rewritten as:
 \mathbb{E}_{q}\int_{t=0}^{t=1} \frac{\alpha_{t}^{'}}{1 - \alpha_{t}} \sum_{l} log p_{\theta}\left(x_{t} \mid x_{0}) \cdot x_{0} dt
 \end{equation}
 
-But this is exactly the **MLM loss function**. So, a BERT-based model can be finetuned to be used as a diffusion model. At each step we replace a different proportion $p$ of tokens with \[MASK\] using a variable $p \in (0.10, 0.90)$. In this way, the model is trained to replace \[MASK\] tokens with real ones in different conditions. During generation, we start from a completely masked sequence, and, at each denoising step, BERT will replace some proportion \[MASK\] with generated tokens, until the full sequence is constructed.
+But this is exactly the **MLM loss function**. So, a BERT-based model can be finetuned to be used as a diffusion model. At each step we replace a different proportion $p$ of tokens with `[MASK]` using a variable $p \in (0.10, 0.90)$. In this way, the model is trained to replace `[MASK]` tokens with real ones in different conditions. During generation, we start from a completely masked sequence, and, at each denoising step, BERT will replace some proportion `[MASK]` with generated tokens, until the full sequence is constructed.
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
@@ -94,27 +94,112 @@ But this is exactly the **MLM loss function**. So, a BERT-based model can be fin
     </div>
 </div>
 <div class="caption">
-    <strong>Fig: 2. BERT model diffusion generation. At each step, some [MASK] tokens gets replaced and the sequence denoised.
+    <strong>Fig: 2. BERT model diffusion generation.</strong> At each step, some [MASK] tokens gets replaced and the sequence denoised. Taken from: https://nathan.rs/posts/roberta-diffusion/.
 </div>
 
 ## DNABERT generates enhancers
 
-This theme supports rendering beautiful math in inline and display modes using [MathJax 3](https://www.mathjax.org/) engine. You just need to surround your math expression with `$$`, like `$$ E = mc^2 $$`. If you leave it inside a paragraph, it will produce an inline expression, just like $$ E = mc^2 $$.
+Now that we know that we can finetune BERT to produce sequences, let's try it with DNABERT. [DNABERT](https://academic.oup.com/bioinformatics/article/37/15/2112/6128680) is a BERT-based genomic model trained on a huge collection of DNA sequences. It has archieved state-of-the-art results in many genomic tasks, including enhancer prediction, promoter identification, and splice site prediction.
 
-To use display mode, again surround your expression with `$$` and place it as a separate paragraph. Here is an example:
+To make a choice, I decided to finetune DNABERT-2 with enhancer sequences taken from the Genomic Understanding Evaluation (GUE) benchmark, available on HF [here](https://huggingface.co/datasets/leannmlindsey/GUE). In particular, I selected enhancers coming from the K562 cell line, and divided them into training and test sets.
 
-$$
-\sum_{k=1}^\infty |\langle x, e_k \rangle|^2 \leq \|x\|^2
-$$
+The finetuning procedure follows what written in the preceeding paragraph, i.e. randomly masking a proportion $p$ of tokens from each sequence, with $p$ ranging from $0.10$ to $0.90$.
 
-You can also use `\begin{equation}...\end{equation}` instead of `$$` for display mode math.
-MathJax will automatically number equations:
+```python
+def collate_fn(self, batch, debug: bool = False) -> dict[str, torch.Tensor]:
+        
+        # Tokenize the sequences
+        [...]
 
-\begin{equation}
-\label{eq:cauchy-schwarz}
-\left( \sum*{k=1}^n a_k b_k \right)^2 \leq \left( \sum*{k=1}^n a*k^2 \right) \left( \sum*{k=1}^n b_k^2 \right)
-\end{equation}
+        # Extract ids and attention mask
+        batch_input_ids = tok_out["input_ids"]
+        batch_attention = tok_out["attention_mask"]
 
-and by adding `\label{...}` inside the equation environment, we can now refer to the equation using `\eqref`.
+        # Get input shape
+        B, L = batch_input_ids.shape
 
-Note that MathJax 3 is [a major re-write of MathJax](https://docs.mathjax.org/en/latest/upgrading/whats-new-3.0.html) that brought a significant improvement to the loading and rendering speed, which is now [on par with KaTeX](http://www.intmath.com/cg5/katex-mathjax-comparison.php).
+        # Clone input ids for the labels
+        labels = batch_input_ids.clone()
+
+        # Sample t ~ Uniform[0, 1)
+        t = torch.empty(B, 1).uniform_(0.10, 0.90)
+        alpha_t = self.alpha(t)
+        p = 1 - alpha_t
+
+        # Determine which tokens can be masked
+        mask_candidate = (batch_attention == 1) & (~is_special)
+
+        # Randomly select tokens to mask based on p
+        rand = torch.rand_like(batch_input_ids, dtype=torch.float)
+        mask_positions = (rand < p) & mask_candidate
+
+        # Apply masking
+        batch_input_ids[mask_positions] = self.tokenizer.mask_token_id
+
+        # Set unmasked positions to -100 in labels (ignored by loss)
+        labels[~mask_positions] = -100
+
+        return {
+            "input_ids": batch_input_ids,
+            "attention_mask": batch_attention,
+            "MLM_labels": labels,
+            "t": t # to keep track of timesteps
+        } 
+```
+
+This ensures that the model is able to reconstruct the input sequence for different masking proportions.
+
+The model was finetuned for 20 epochs, maybe a little too much (but took less than an hour on my 4060 GPU), and the results are shown below.
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/BERT/loss.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 3. DiffusionDNABERT loss.</strong> Training loss is shown in orange, test loss in red, and token accuracy in violet. Please note that the losses have different ranges from the accuracy (0, 1).
+</div>
+
+Now that we have the model, let's **start generating something** and see how good are the generated enhancer. But, first of all, how can I decide whether an enhancer is good or bad? And, most importantly, what is an enhancer? Following *Barral et al., 2023*:
+
+> Enhancers are cis-regulatory elements that can stimulate gene expression from distance, and drive precise spatiotemporal gene expression profiles during development. Functional enhancers display specific features including an open chromatin conformation, Histone H3 lysine 27 acetylation, Histone H3 lysine 4 mono-methylation enrichment, and enhancer RNAs production. [[...]] Their DNA sequences are composed of tissue-specific transcription factor (TFs) binding sites, conferring tissue specific activity.
+
+So, an enhancer is a specific sequence that:
+
+1. Usually is in an **open-chromatin region** so it must display some transcription factor binding sites.
+2. Displays specific features like Histone H3 lysine 27 acetylation (H3K27ac) and Histone H3 lysine 4 mono-methylation (H3K3me1)
+
+So let's search for TFs and H3K27ac and H3K3me1 traits in our generated sequences. The TFs can be found screening different position frequency matrices (PFMs) against the generated and test sequences to see whether they share the same composition of TFs, while the Histone traits can be found using a DL model like Enformer.
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/BERT/TF_composition.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 4. TF composition.</strong> The axes represent the proportion of transcription factor binding sites in the generated sequences (x-axis) and test sequences (y-axis). Both the spearman and pearson correlation are significant (p < 0.05).
+</div>
+
+Unfortunately, the H3K27ac head for K562 cells is not available in Enformer, but we can still measure the H3K3me1 trait. For this experiment, since Enformer context window is roughly 200kbp, I inserted my generated sequences (roughly 3000bp) into 200kbp random sequences, and measured the H3K3me1 trait. Below you can see an example:
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/BERT/TF_composition.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 5. H3K3me1 trait in a generated sequence.</strong> The inserted generated sequence (injected in the middle of the random sequence) shows a high valued trait compared to the rest of the sequence.
+</div>
+
+So, I decided to create a bunch of 2000 sequences (as many as they are in the test set), measure their activity, to compare with the test set's activity. In the end, the generated sequences seems to follow the same activity pattern, underlying a good generation. 
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/BERT/activity_values.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 6. H3K3me1 trait distribution in generated and test sequences.</strong> The distribution of the H3K3me1 trait values across the generated sequences match and follows the one related to the test set.
+</div>
+
+## Conclusions

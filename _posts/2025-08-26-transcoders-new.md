@@ -122,7 +122,7 @@ With transcoders in hand, we can go a step further and actually trace the circui
 
 ### Computing the Attributions between Transcoder Feature Pairs
 
-To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ denote the scalar activation of the $i$-th feature in the layer $l$ transcoder on token $t$, given the MLP input $x^{(l, t)}_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
+To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}\_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ denote the scalar activation of the $i$-th feature in the layer $l$ transcoder on token $t$, given the MLP input $x^{(l, t)}\_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
 
 $$
 z^{(l,i)}_{\text{TC}}\left(x^{(l,t)}_{\text{mid}}\right)
@@ -133,8 +133,8 @@ $$
 
 Here:
 
-- $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
-- $f^{(l,i)}_{\text{dec}}\cdot f^{(l',i')}_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
+- $z^{(l,i)}\_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
+- $f^{(l,i)}\_{\text{dec}}\cdot f^{(l',i')}_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
 
 This clean factorization gives us the best of both worlds:
 
@@ -226,7 +226,7 @@ $$
 =\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, \big(\big(W^{(l,h)}_{\text{OV}}\big)^{T}f^{(l',i')}_{\text{enc}}\big) \cdot x^{(l,s)}_{\text{pre}} \tag{9}
 $$
 
-where from (7) to (8) we put $f^{(l',i')}_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
+where from (7) to (8) we put $f^{(l',i')}\_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}\_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
 
 Thus, the contribution of source token $s$ at layer $l$ through head $h$ can be written as:
 

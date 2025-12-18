@@ -5,7 +5,7 @@ date: 2025-12-18 11:12:00-0400
 description: How to generate DNA sequences starting from a BERT-like model? 
 tags: formatting math
 categories: sample-posts
-related_posts: true
+related_posts: false
 ---
 
 ## Introduction
@@ -36,9 +36,21 @@ Diffusion models are a class of latent variable models that are originally desig
 
 \begin(equation)
 \label(Eq:Forward)
-q\left(x_{t} \mid x_{t-1} \right) = \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
+q\left(x_{t} \mid x_{t-1} \right) \eq \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
 \end(equation)
 
+where $$ \beta_{t} \in \left(0, 1\right)$$ is a noise schedule controlling the step size of adding noise (i.e. the \[MASK\] token).
+
+It can be shown that if $$ \beta_{t} $$ is small enaugh, the reverse process $$ q\left(x_{t-1} \mid x_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
+
+\begin(equation)
+\label(Eq:Parametrized_model)
+p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) \eq \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma_{\theta}\left(x_{t}, t\right)\right)
+\end(equation)
+
+where $$ \mu_{\theta} $$ and $$ \Sigma_{\theta} $$ can be implemented using a U-Net or a Neural Network. When conditioning also on $$ x_{0}, p_{\theta}\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ has a closed form so we can use **Kulback-Leider divergence** as a loss for our model.
+
+For discrete domain
 ## BERT is a one-step diffusion model
 
 ## DNABERT generates enhancers

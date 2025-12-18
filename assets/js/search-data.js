@@ -23,7 +23,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/publications/";
           },
-        },{id: "post-circuit-tracing-an-in-depth-explanation-about-creating-interpretability-circuits",
+        },{id: "post-your-favourite-genomic-model-knows-more-than-you-think",
+        
+          title: "Your Favourite Genomic Model knows more than you think",
+        
+        description: "How to generate DNA sequences starting from a BERT-like model?",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2025/DiffusionDNABERT-new/";
+          
+        },
+      },{id: "post-circuit-tracing-an-in-depth-explanation-about-creating-interpretability-circuits",
         
           title: "Circuit Tracing: An in-depth explanation about creating interpretability circuits",
         

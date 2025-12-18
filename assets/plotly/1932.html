@@ -24948,14 +24948,12 @@
                               x: g / 2,
                               y: g / 2,
                             }),
-                              b
-                                .select("rect")
-                                .attr({
-                                  width: r._width - 2 * g + Vh.scrollBarWidth + Vh.scrollBarMargin,
-                                  height: r._effHeight - 2 * g,
-                                  x: g,
-                                  y: g + _e,
-                                }),
+                              b.select("rect").attr({
+                                width: r._width - 2 * g + Vh.scrollBarWidth + Vh.scrollBarMargin,
+                                height: r._effHeight - 2 * g,
+                                x: g,
+                                y: g + _e,
+                              }),
                               mh.setClipUrl(E, a, e),
                               ze(_e, N, ae),
                               x.on("wheel", function () {
@@ -40736,14 +40734,12 @@
                   (ke.exit().remove(),
                   ke.enter().append("clipPath").attr("id", W).append("rect"),
                   C || q
-                    ? ((this._clipRect = ke
-                        .select("rect")
-                        .attr({
-                          x: Math.floor(re),
-                          y: Math.floor(_e),
-                          width: Math.ceil(ae) - Math.floor(re),
-                          height: Math.ceil(Me) - Math.floor(_e),
-                        })),
+                    ? ((this._clipRect = ke.select("rect").attr({
+                        x: Math.floor(re),
+                        y: Math.floor(_e),
+                        width: Math.ceil(ae) - Math.floor(re),
+                        height: Math.ceil(Me) - Math.floor(_e),
+                      })),
                       this.container.call(pT.setClipUrl, W, this.gd),
                       this.bg.attr({ x: s, y: u, width: l, height: c }))
                     : (this.bg.attr({ width: 0, height: 0 }),

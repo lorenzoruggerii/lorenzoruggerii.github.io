@@ -32,6 +32,13 @@ By forcing the model to analyze these surrounding "clues" from both directions, 
 
 ## Discrete Diffusion
 
+Diffusion models are a class of latent variable models that are originally designed for continuous domains. A diffusion model is consisting of a forward diffusion process. Given a sample $$ x_{0} \sim q(x_{0}), a Markov chain of latent variables $$ x_{1}, ..., x_{T} $$ are produced in the forward process by progressively adding a small amount of Gaussian noise to the sample:
+
+\begin(equation)
+\label(Eq:Forward)
+q\left(x_{t} \mid x_{t-1} \right) = \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
+\end(equation)
+
 ## BERT is a one-step diffusion model
 
 ## DNABERT generates enhancers

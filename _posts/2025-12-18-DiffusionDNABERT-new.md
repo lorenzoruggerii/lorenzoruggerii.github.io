@@ -6,6 +6,9 @@ description: How to generate DNA sequences starting from a BERT-like model?
 tags: formatting math
 categories: sample-posts
 related_posts: false
+published: true
+
+bibliography: 2025-08-26-DiffusionDNABERT.bib
 ---
 
 ## Introduction
@@ -33,36 +36,66 @@ By forcing the model to analyze these surrounding "clues" from both directions, 
 
 ## Discrete Diffusion
 
-Diffusion models are a class of latent variable models that are originally designed for continuous domains. A diffusion model is consisting of a forward diffusion process. Given a sample $$ x*{0} \sim q(x*{0}), a Markov chain of latent variables $$ x*{1}, ..., x*{T} $$ are produced in the forward process by progressively adding a small amount of Gaussian noise to the sample:
+Diffusion models are a class of latent variable models that are originally designed for continuous domains. A diffusion model is consisting of a forward diffusion process. Given a sample $$ x_{0} \sim q(x_{0}), a Markov chain of latent variables $$ x_{1}, ..., x_{T} $$ are produced in the forward process by progressively adding a small amount of Gaussian noise to the sample:
 
 \begin{equation}
 \label{Eq:Forward}
-q\left(x*{t} \mid x*{t-1} \right) \eq \mathcal{N}(x*{t};\sqrt{1 - \beta*{t}}x*{t-1}, \beta*{t}\mathbb{I})
+q\left(x_{t} \mid x_{t-1} \right) \eq \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
 \end{equation}
 
-where $$ \beta\_{t} \in \left(0, 1\right)$$ is a noise schedule controlling the step size of adding noise (i.e. the \[MASK\] token).
+where $$ \beta_{t} \in \left(0, 1\right)$$ is a noise schedule controlling the step size of adding noise (i.e. the \[MASK\] token).
 
-It can be shown that if $$ \beta*{t} $$ is small enaugh, the reverse process $$ q\left(x*{t-1} \mid x\_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
+It can be shown that if $$ \beta*{t} $$ is small enaugh, the reverse process $$ q\left(x*{t-1} \mid x_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
 
 \begin{equation}
 \label{Eq:Parametrized*model}
-p*{\theta}\left(x*{t-1} \mid x*{t}, t\right) \eq \mathcal{N}\left(x*{t-1};\mu*{\theta}\left(x*{t}, t\right), \Sigma*{\theta}\left(x\_{t}, t\right)\right)
+p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) \eq \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma*{\theta}\left(x_{t}, t\right)\right)
 \end{equation}
 
-where $$ \mu*{\theta} $$ and $$ \Sigma*{\theta} $$ can be implemented using a U-Net or a Neural Network. When conditioning also on $$ x*{0}, p*{\theta}\left(x*{t-1} \mid x*{t}, x\_{0}\right) $$ has a closed form so we can use **Kulback-Leider divergence** as a loss for our model.
+where $$ \mu_{\theta} $$ and $$ \Sigma_{\theta} $$ can be implemented using a U-Net or a Neural Network. When conditioning also on $$ x_{0}, p_{\theta}\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ has a closed form so we can use **Kulback-Leider divergence** as a loss for our model.
 
-For discrete domains, each element of $$ x\_{t} $$ is a discrete random variable with K categories. Denote $$ x_t $$ as a stack of one-hot vectors, the process of adding noise can be written as:
+For discrete domains, each element of $$ x_{t} $$ is a discrete random variable with K categories. Denote $$ x_t $$ as a stack of one-hot vectors, the process of adding noise can be written as:
 
 \begin{equation}
 \label(Eq:Discrete*diffusion)
-q*\left(x*{t} \mid x*{t-1}\right) = \text{Cat}\left(x*{t}; p \eq x*{t-1} Q\_{t}\right)
+q_{\left(x_{t} \mid x_{t-1}\right)} = \text{Cat}\left(x_{t}; p \eq x_{t-1} Q_{t}\right)
 \end{equation}
 
 where $$ \text{Cat}(\dot) $$ is a categorical distribution (i.e. the random variable can take one of K possible categories) and $$ Q\_{t} $$ is a transition matrix that is applied to each token in the sequence independently.
 
 Therefore, for a given token, using Bayes theorem, it is easy to obtain that:
 
+\begin{equation}
+\label{Eq:D3PM}
+q\left(x_{t-1} \mid x_{t}, x_{0}\right) \eq \text{Cat} \big( x_{t-1}; p \eq \frac{x_{t} Q^{T}_{t} \odot x_{0}\bar{Q}_{t-1}}{x_{0}\bar{Q}_{t}x_{t}^{T}} \big)
+\end{equation}
+
+where $$ \bar{Q}_{t} = Q_{1}Q_{2} \dots Q_{t} $$. So with $$ q\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ we can learn to reverse the diffusion process.
+
 ## BERT is a one-step diffusion model
+
+Luckily for us, it can be shown <d-cite key="Sahoo2024-gl"></d-cite> that the Loss for a Discrete Diffusion model can be transformed into an MLM loss under the following conditions:
+
+1. **Zero-Masking Probabilities**: a clear input (i.e. an input token which is non-masked) is never masked.
+2. **Carry-Over Unmasking**: an unmasked token remains unchanged during reverse diffusion.
+
+If so, the loss function can be rewritten as:
+
+\begin{equation}
+\label{Eq:LossFN}
+\mathbb{E}_{q}\int_{t=0}^{t=1} \frac{\alpha_{t}^{'}}{1 - \alpha_{t}} \sum_{l} log p_{\theta}\left(x_{t} \mid x_{0}) \cdot x_{0} dt
+\end{equation}
+
+But this is exactly the **MLM loss function**. So, a BERT-based model can be finetuned to be used as a diffusion model. At each step we replace a different proportion $p$ of tokens with \[MASK\] using a variable $p \in (0.10, 0.90)$. In this way, the model is trained to replace \[MASK\] tokens with real ones in different conditions. During generation, we start from a completely masked sequence, and, at each denoising step, BERT will replace some proportion \[MASK\] with generated tokens, until the full sequence is constructed.
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/BERT/roberta-diffusion.gif" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 2. BERT model diffusion generation. At each step, some [MASK] tokens gets replaced and the sequence denoised.
+</div>
 
 ## DNABERT generates enhancers
 

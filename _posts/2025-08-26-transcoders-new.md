@@ -87,7 +87,7 @@ $$
 z_{\text{TC}}(x) = \text{ReLU}({W_{\text{enc}}}x) + b_{\text{enc}}
 $$
 
-where $W_{\text{enc}} \in \mathbb{R}^{d_\text{features} \times d_{\text{model}}}$ maps the input into a higher-dimensional "feature space" ($d_{\text{features}} \gg d_{\text{model}}$) and $b_{\text{enc}}$ is a bias term. Each component of $z\_{\text{TC}}(x)$ represents the activation of a sparse feature.
+where $W_{\text{enc}} \in \mathbb{R}^{d_\text{features} \times d_{\text{model}}}$ maps the input into a higher-dimensional "feature space" ($d_{\text{features}} \gg d_{\text{model}}$) and $b_{\text{enc}}$ is a bias term. Each component of $z_{\text{TC}}(x)$ represents the activation of a sparse feature.
 
 The decoder stage then maps these features back into the model's hidden space:
 
@@ -122,7 +122,7 @@ With transcoders in hand, we can go a step further and actually trace the circui
 
 ### Computing the Attributions between Transcoder Feature Pairs
 
-To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}\_{\text{TC}}(x^{(l,t)}\_{\text{mid}})$ denote the scalar activation of the $i$-th feature in the layer $l$ transcoder on token $t$, given the MLP input $x^{(l, t)}\_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
+To understand how circuits are build, we start by giving a way of measuring the connection between two transcoder features. With transcoders, this turn out to be extremely simple. Formally, let $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ denote the scalar activation of the $i$-th feature in the layer $l$ transcoder on token $t$, given the MLP input $x^{(l, t)}_{\text{mid}}$. Then for $l \lt l'$ the contribution of feature $ i $ in transcoder $ l $ to the activation of feature $ i' $ in transcoder $ l' $ is:
 
 $$
 z^{(l,i)}_{\text{TC}}\left(x^{(l,t)}_{\text{mid}}\right)
@@ -133,8 +133,8 @@ $$
 
 Here:
 
-- $z^{(l,i)}\_{\text{TC}}(x^{(l,t)}\_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
-- $f^{(l,i)}\_{\text{dec}}\cdot f^{(l',i')}\_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
+- $z^{(l,i)}_{\text{TC}}(x^{(l,t)}_{\text{mid}})$ is the activation of the earlier feature — this depends on the current input.
+- $f^{(l,i)}_{\text{dec}}\cdot f^{(l',i')}_{\text{enc}}$ is the dot product between the earlier feature’s decoder vector and the later feature’s encoder vector — this is input-invariant once the transcoder is trained.
 
 This clean factorization gives us the best of both worlds:
 
@@ -226,7 +226,7 @@ $$
 =\sum_{\text{source token}\,s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, \big(\big(W^{(l,h)}_{\text{OV}}\big)^{T}f^{(l',i')}_{\text{enc}}\big) \cdot x^{(l,s)}_{\text{pre}} \tag{9}
 $$
 
-where from (7) to (8) we put $f^{(l',i')}\_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}\_{\text{pre}}, x^{(l,s)}\_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
+where from (7) to (8) we put $f^{(l',i')}_{\text{enc}}$ inside the parenthesis since $\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big)$ are scalars for all $s$ and from (8) to (9) we used $A\cdot B = (B^{T}\cdot A^{T})^{T}$.
 
 Thus, the contribution of source token $s$ at layer $l$ through head $h$ can be written as:
 
@@ -254,9 +254,9 @@ So far, we've seen how to calculate the attribution from an earlier-layer transc
 
 This bring us to the idea of **recursive attribution tracing**, that can be expressed as follows:
 
-> Starting from the final feature vector we care about (e.g. $f\_{enc}^{(l', i')}$ for $i$-th feature in layer $l'$) we move backwards step by step. At each node - earlier transcoder feature or attention head - we compute how much that node contributes to the current feature vector using Equations 5 and 10. We than update our feature vector accordingly and continue tracing backwards until we reach the inputs.
+> Starting from the final feature vector we care about (e.g. $f_{enc}^{(l', i')}$ for $i$-th feature in layer $l'$) we move backwards step by step. At each node - earlier transcoder feature or attention head - we compute how much that node contributes to the current feature vector using Equations 5 and 10. We than update our feature vector accordingly and continue tracing backwards until we reach the inputs.
 
-Now, why do we need to update the feature vector step? Recall that we are calculating attributions for a particular feature in a given layer computing the inner product beween its **feature vector** and its inputs $f\_{\text{enc}}^{(l', i')} \cdot x\_{\text{mid}}^{(l, t)}$. So the feature vector represents the lens thruogh with we measure attribution, and that lens changes as activations are transformed along the computational path <d-footnote>for example, traversing a linear layer</d-footnote>. If we held the same vector fixed everywhere, we'd be ignoring how each node remaps information. Consider a simple example: suppose a node $c$ takes an input $x$ and produces an output $y=Ax$ where $A$ is a weight matrix. If our current feature is $f'$, then the attribution of $c$ is $a' = f' \cdot y$ and assume that this attribution is significant. We therefore want to trace back again to understand what causes $c$ to activate. However, here it's not enough to reuse $f'$ directly, because $f'$ "lives" in the output space of $y$ not in the input space of $x$. Instead, we update the feature vector so that the original $a'$ attribution gets untouched:
+Now, why do we need to update the feature vector step? Recall that we are calculating attributions for a particular feature in a given layer computing the inner product beween its **feature vector** and its inputs $f_{\text{enc}}^{(l', i')} \cdot x_{\text{mid}}^{(l, t)}$. So the feature vector represents the lens thruogh with we measure attribution, and that lens changes as activations are transformed along the computational path <d-footnote>for example, traversing a linear layer</d-footnote>. If we held the same vector fixed everywhere, we'd be ignoring how each node remaps information. Consider a simple example: suppose a node $c$ takes an input $x$ and produces an output $y=Ax$ where $A$ is a weight matrix. If our current feature is $f'$, then the attribution of $c$ is $a' = f' \cdot y$ and assume that this attribution is significant. We therefore want to trace back again to understand what causes $c$ to activate. However, here it's not enough to reuse $f'$ directly, because $f'$ "lives" in the output space of $y$ not in the input space of $x$. Instead, we update the feature vector so that the original $a'$ attribution gets untouched:
 
 $$
 a' = f' \cdot y = f' \cdot (Ax) = (f' \cdot A)x = f \cdot x
@@ -271,13 +271,13 @@ $$
 a' = f' \cdot y = f \cdot x
 $$
 
-When node $c$ is an attention head in layer $l$, we have $y = x\_{\text{mid}}^{(l, t)}$, so:
+When node $c$ is an attention head in layer $l$, we have $y = x_{\text{mid}}^{(l, t)}$, so:
 
 $$
 a' = f' \cdot y = f' \cdot x_{\text{mid}^{(l, t)}} = f' \cdot \sum_{h}\sum_{s}\text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}
 $$
 
-However, assume that we are tracing the attribution through head $h$ of a source token at position $s$. Therefore, we have $x = x\_{\text{pre}}^{(l, s)}$ and the updated feature vector will be:
+However, assume that we are tracing the attribution through head $h$ of a source token at position $s$. Therefore, we have $x = x_{\text{pre}}^{(l, s)}$ and the updated feature vector will be:
 
 $$
 a' = f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{pre}}\big) \, W^{(l,h)}_{\text{OV}}\,x^{(l,s)}_{\text{pre}}
@@ -302,7 +302,7 @@ f = f' \cdot \text{score}^{(l,h)}\big(x^{(l,t)}_{\text{pre}}, x^{(l,s)}_{\text{p
 \tag{12}
 $$
 
-In contrast, if $c$ is a transcoder feature then $y = x\_{\text{post}}^{(l, t)}$, so we have:
+In contrast, if $c$ is a transcoder feature then $y = x_{\text{post}}^{(l, t)}$, so we have:
 
 $$
 a' = f' \cdot x_{\text{post}}^{(l, t)} = f' \cdot \text{MLP}^{(l)}(x_{\text{mid}}^{(l, t)}) \approx f' \cdot \text{TC}^{(l)}(x_{\text{mid}}^{(l, t)})
@@ -312,7 +312,7 @@ $$
 = f' \cdot \sum_{j}z_{\text{TC}}^{(l, j)}(x_{\text{mid}}^{(l, t)}) \cdot f_{\text{dec}}^{(l, j)}
 $$
 
-Moreover, from the definition of transcoder, we have that $z\_{\text{TC}}^{(l, t)}(x\_{\text{mid}}^{(l, t)}) = f\_{\text{enc}}^{(l, j)} \cdot (x\_{\text{mid}}^{(l, t)})$. Therefore, we obtain:
+Moreover, from the definition of transcoder, we have that $z_{\text{TC}}^{(l, t)}(x_{\text{mid}}^{(l, t)}) = f_{\text{enc}}^{(l, j)} \cdot (x_{\text{mid}}^{(l, t)})$. Therefore, we obtain:
 
 $$
 a' = f' \cdot x_{\text{post}}^{(l, t)} = f' \cdot \sum_{j} f_{\text{enc}}^{(l, j)} \cdot (x_{\text{mid}}^{(l, t)}) \cdot f_{\text{dec}}^{(l, j)}
@@ -328,7 +328,7 @@ $$
 =\sum_{j} \big(f_{\text{enc}}^{(l, j)} \cdot (x_{\text{mid}}^{(l, t)})\big) \cdot \big( f' \cdot f_{\text{dec}}^{(l, j)}\big)
 $$
 
-And from this, knowing that our $x = (x\_{\text{mid}}^{(l, t)})$ and assuming we are interested in the contribution of feature $j$ from layer $l$ it's easy to see that:
+And from this, knowing that our $x = (x_{\text{mid}}^{(l, t)})$ and assuming we are interested in the contribution of feature $j$ from layer $l$ it's easy to see that:
 
 $$
 f = \big( f' \cdot f_{\text{dec}}^{(l, j)}\big) \cdot f_{\text{enc}}^{(l, j)}

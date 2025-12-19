@@ -17,7 +17,7 @@ In the world of Natural Language Processing, we often draw a sharp line between 
 
 But what if this boundary is more subtle than you think? What if your favourite BERT-style genomic model could surprise you by generating coherent text just after one hour of finetuning?
 
-In this post, we'll explore how the MLM objective can be mathematically reframed as a **Discrete Diffusion** process, effectively turning a "static" classifier into a powerful generator. I wanted to test this theory using DNABERT-2 to generate synthetic human enhancers and validate them against real ones. All of the code can be found [here]().
+In this post, we'll explore how the MLM objective can be mathematically reframed as a **Discrete Diffusion** process, effectively turning a "static" classifier into a powerful generator. I wanted to test this theory using DNABERT-2 to generate synthetic human enhancers and validate them against real ones. All of the code can be found [here](https://github.com/lorenzoruggerii/DiffusionDNABERT.git).
 
 ## Masked Language Modeling (MLM)
 
@@ -83,9 +83,13 @@ Luckily for us, [it can be shown](https://s-sahoo.com/mdlm) that the Loss for a 
 
 If so, the loss function can be rewritten as:
 
-\begin{equation}
-\mathbb{E}\_{q} \int_{t=0}^{t=1} \frac{\alpha_{t}^{'}}{1 - \alpha_{t}} \sum_{l} log p_{\theta}\left(x_{t} \mid x_{0}) \cdot x_{0} dt
-\end{equation}
+$$
+\mathbb{E}_{q} \int_{t=0}^{1}
+\frac{\alpha_t'}{1 - \alpha_t}
+\sum_{l} \log p_{\theta}(x_t \mid x_0) \cdot x_0
+\, dt
+$$
+
 
 But this is exactly the **MLM loss function**. So, a BERT-based model can be finetuned to be used as a diffusion model. At each step we replace a different proportion $p$ of tokens with `[MASK]` using a variable $p \in (0.10, 0.90)$. In this way, the model is trained to replace `[MASK]` tokens with real ones in different conditions. During generation, we start from a completely masked sequence, and, at each denoising step, BERT will replace some proportion `[MASK]` with generated tokens, until the full sequence is constructed.
 

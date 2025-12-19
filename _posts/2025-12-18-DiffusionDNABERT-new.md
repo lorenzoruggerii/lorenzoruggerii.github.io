@@ -45,7 +45,6 @@ By forcing the model to analyze these surrounding "clues" from both directions, 
 Diffusion models are a class of latent variable models that are originally designed for continuous domains. A diffusion model is consisting of a forward diffusion process. Given a sample $$ x_{0} \sim q(x_{0}) $$, a Markov chain of latent variables $$ x_{1}, ..., x_{T} $$ are produced in the forward process by progressively adding a small amount of Gaussian noise to the sample:
 
 \begin{equation}
-\label{Eq:Forward}
 q\left(x_{t} \mid x_{t-1} \right) = \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
 \end{equation}
 
@@ -54,7 +53,6 @@ where $$ \beta_{t} \in \left(0, 1\right) $$ is a noise schedule controlling the 
 It can be shown that if $$ \beta_{t} $$ is small enaugh, the reverse process $$ q\left(x_{t-1} \mid x_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
 
 \begin{equation}
-\label{Eq:ParametrizedModel}
 p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) = \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma_{\theta}\left(x_{t}, t\right)\right)
 \end{equation}
 
@@ -63,7 +61,6 @@ where $$ \mu_{\theta} $$ and $$ \Sigma_{\theta} $$ can be implemented using a U-
 For discrete domains, each element of $$ x_{t} $$ is a discrete random variable with K categories. Denote $$ x_{t} $$ as a stack of one-hot vectors, the process of adding noise can be written as:
 
 \begin{equation}
-\label{Eq:Forward}
 q_{\left(x_{t} \mid x_{t-1}\right)} = \text{Cat}\left(x_{t}; p = x_{t-1} Q_{t}\right)
 \end{equation}
 
@@ -72,7 +69,6 @@ where $$ \text{Cat}(z) $$ is a categorical distribution (i.e. the random variabl
 Therefore, for a given token, using Bayes theorem, it is easy to obtain that:
 
 \begin{equation}
-\label{Eq:Forward}
 q\left(x_{t-1} \mid x_{t}, x_{0}\right) = \text{Cat} \big( x_{t-1}; p = \frac{x_{t} Q^{T}\_{t} \odot x_{0}\bar{Q}\_{t-1}}{x_{0}\bar{Q}\_{t}x_{t}^{T}} \big)
 \end{equation}
 
@@ -88,7 +84,6 @@ Luckily for us, [it can be shown](https://s-sahoo.com/mdlm) that the Loss for a 
 If so, the loss function can be rewritten as:
 
 \begin{equation}
-\label{Eq:Forward}
 \mathbb{E}\_{q} \int_{t=0}^{t=1} \frac{\alpha_{t}^{'}}{1 - \alpha_{t}} \sum_{l} log p_{\theta}\left(x_{t} \mid x_{0}) \cdot x_{0} dt
 \end{equation}
 

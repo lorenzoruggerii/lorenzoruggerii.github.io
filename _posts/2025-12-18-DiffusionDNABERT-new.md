@@ -90,7 +90,6 @@ $$
 \, dt
 $$
 
-
 But this is exactly the **MLM loss function**. So, a BERT-based model can be finetuned to be used as a diffusion model. At each step we replace a different proportion $p$ of tokens with `[MASK]` using a variable $p \in (0.10, 0.90)$. In this way, the model is trained to replace `[MASK]` tokens with real ones in different conditions. During generation, we start from a completely masked sequence, and, at each denoising step, BERT will replace some proportion `[MASK]` with generated tokens, until the full sequence is constructed.
 
 <div class="row mt-3">

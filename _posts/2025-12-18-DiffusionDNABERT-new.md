@@ -3,8 +3,8 @@ layout: post
 title: Your Favourite Genomic Model knows more than you think
 date: 2025-12-18 11:12:00-0400
 description: How to generate DNA sequences starting from a BERT-like model?
-tags: formatting math
-categories: sample-posts
+tags: genomics BERT diffusion
+categories:
 related_posts: false
 published: true
 
@@ -12,6 +12,12 @@ bibliography: 2025-08-26-DiffusionDNABERT.bib
 ---
 
 ## Introduction
+
+In the world of Natural Language Processing, we often draw a sharp line between **discriminative** models like BERT (designed to understand and classify) and **generative** models like GPT (designed to create).
+
+But what if this boundary is more subtle than you think? What if your favourite BERT-style genomic model could surprise you by generating coherent text just after one hour of finetuning?
+
+In this post, we'll explore how the MLM objective can be mathematically reframed as a **Discrete Diffusion** process, effectively turning a "static" classifier into a powerful generator. I wanted to test this theory using DNABERT-2 to generate synthetic human enhancers and validate them against real ones. All of the code can be found [here]().
 
 ## Masked Language Modeling (MLM)
 
@@ -36,20 +42,20 @@ By forcing the model to analyze these surrounding "clues" from both directions, 
 
 ## Discrete Diffusion
 
-Diffusion models are a class of latent variable models that are originally designed for continuous domains. A diffusion model is consisting of a forward diffusion process. Given a sample $$ x_{0} \sim q(x_{0}), a Markov chain of latent variables $$ x_{1}, ..., x_{T} $$ are produced in the forward process by progressively adding a small amount of Gaussian noise to the sample:
+Diffusion models are a class of latent variable models that are originally designed for continuous domains. A diffusion model is consisting of a forward diffusion process. Given a sample $$ x_{0} \sim q(x_{0}) $$, a Markov chain of latent variables $$ x_{1}, ..., x_{T} $$ are produced in the forward process by progressively adding a small amount of Gaussian noise to the sample:
 
 \begin{equation}
 \label{Eq:Forward}
-q\left(x_{t} \mid x_{t-1} \right) \eq \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
+q\left(x_{t} \mid x_{t-1} \right) = \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
 \end{equation}
 
 where $$ \beta_{t} \in \left(0, 1\right)$$ is a noise schedule controlling the step size of adding noise (i.e. the \[MASK\] token).
 
-It can be shown that if $$ \beta*{t} $$ is small enaugh, the reverse process $$ q\left(x*{t-1} \mid x_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
+It can be shown that if $$ \beta_{t} $$ is small enaugh, the reverse process $$ q\left(x_{t-1} \mid x_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
 
 \begin{equation}
-\label{Eq:Parametrized*model}
-p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) \eq \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma*{\theta}\left(x_{t}, t\right)\right)
+\label{Eq:ParametrizedModel}
+p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) = \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma*{\theta}\left(x_{t}, t\right)\right)
 \end{equation}
 
 where $$ \mu_{\theta} $$ and $$ \Sigma_{\theta} $$ can be implemented using a U-Net or a Neural Network. When conditioning also on $$ x_{0}, p_{\theta}\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ has a closed form so we can use **Kulback-Leider divergence** as a loss for our model.
@@ -57,8 +63,8 @@ where $$ \mu_{\theta} $$ and $$ \Sigma_{\theta} $$ can be implemented using a U-
 For discrete domains, each element of $$ x_{t} $$ is a discrete random variable with K categories. Denote $$ x_t $$ as a stack of one-hot vectors, the process of adding noise can be written as:
 
 \begin{equation}
-\label(Eq:Discrete*diffusion)
-q_{\left(x_{t} \mid x_{t-1}\right)} = \text{Cat}\left(x_{t}; p \eq x_{t-1} Q_{t}\right)
+\label(Eq:DiscreteDiffusion)
+q_{\left(x_{t} \mid x_{t-1}\right)} = \text{Cat}\left(x_{t}; p = x_{t-1} Q_{t}\right)
 \end{equation}
 
 where $$ \text{Cat}(\dot) $$ is a categorical distribution (i.e. the random variable can take one of K possible categories) and $$ Q\_{t} $$ is a transition matrix that is applied to each token in the sequence independently.
@@ -67,7 +73,7 @@ Therefore, for a given token, using Bayes theorem, it is easy to obtain that:
 
 \begin{equation}
 \label{Eq:D3PM}
-q\left(x_{t-1} \mid x_{t}, x_{0}\right) \eq \text{Cat} \big( x_{t-1}; p \eq \frac{x_{t} Q^{T}_{t} \odot x_{0}\bar{Q}_{t-1}}{x_{0}\bar{Q}_{t}x_{t}^{T}} \big)
+q\left(x_{t-1} \mid x_{t}, x_{0}\right) = \text{Cat} \big( x_{t-1}; p = \frac{x_{t} Q^{T}_{t} \odot x_{0}\bar{Q}_{t-1}}{x_{0}\bar{Q}_{t}x_{t}^{T}} \big)
 \end{equation}
 
 where $$ \bar{Q}_{t} = Q_{1}Q_{2} \dots Q_{t} $$. So with $$ q\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ we can learn to reverse the diffusion process.
@@ -169,7 +175,7 @@ So, an enhancer is a specific sequence that:
 1. Usually is in an **open-chromatin region** so it must display some transcription factor binding sites.
 2. Displays specific features like Histone H3 lysine 27 acetylation (H3K27ac) and Histone H3 lysine 4 mono-methylation (H3K3me1)
 
-So let's search for TFs and H3K27ac and H3K3me1 traits in our generated sequences. The TFs can be found screening different position frequency matrices (PFMs) against the generated and test sequences to see whether they share the same composition of TFs, while the Histone traits can be found using a DL model like Enformer.
+So let's search for TFs and H3K27ac and H3K3me1 traits in our generated sequences. The TFs can be found screening different position frequency matrices (PFMs) against the generated and test sequences to see whether they share the same composition of TFs, while the Histone traits can be found using a DL model like Enformer. For the PFMs, I downloaded the human (redundant) collection from [JASPAR](https://jaspar.elixir.no/downloads/).
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
@@ -184,7 +190,7 @@ Unfortunately, the H3K27ac head for K562 cells is not available in Enformer, but
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/BERT/TF_composition.png" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/BERT/seq_5_H3K4me1.png" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
@@ -203,3 +209,9 @@ So, I decided to create a bunch of 2000 sequences (as many as they are in the te
 </div>
 
 ## Conclusions
+
+This results seems promising, since in just one hour we passed from having an encoder to have a generative model which generates good human enhancers. So, for synthetic DNA generation, this suggests that instead of starting from scratch, we can take the massive genomic "knowledge" already stored in pre-trained models like DNABERT and "steer" it toward designing synthetic regulatory elements with specific functional goals.
+
+However, for now the model is only capable of generating one type of sequences. I'm wondering whether working on the `[CLS]` token during generation could steer the model into producing more specific synthetic sequences (i.e. generating promoters or enhancers).
+
+Ultimately, this experiment proves that these models are not just static lookup tables for genomic features. When we change our perspective on how to use them, we realize that **your favourite genomic model knows more than you think**.

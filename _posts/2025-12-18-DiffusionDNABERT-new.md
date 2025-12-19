@@ -49,31 +49,31 @@ Diffusion models are a class of latent variable models that are originally desig
 q\left(x_{t} \mid x_{t-1} \right) = \mathcal{N}(x_{t};\sqrt{1 - \beta_{t}}x_{t-1}, \beta_{t}\mathbb{I})
 \end{equation}
 
-where $$ \beta_{t} \in \left(0, 1\right)$$ is a noise schedule controlling the step size of adding noise (i.e. the \[MASK\] token).
+where $$ \beta_{t} \in \left(0, 1\right) $$ is a noise schedule controlling the step size of adding noise (i.e. the `[MASK]` token).
 
 It can be shown that if $$ \beta_{t} $$ is small enaugh, the reverse process $$ q\left(x_{t-1} \mid x_{t} \right) $$ is also a Gaussian, learned by the parametrized model.
 
 \begin{equation}
 \label{Eq:ParametrizedModel}
-p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) = \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma*{\theta}\left(x_{t}, t\right)\right)
+p_{\theta}\left(x_{t-1} \mid x_{t}, t\right) = \mathcal{N}\left(x_{t-1};\mu_{\theta}\left(x_{t}, t\right), \Sigma_{\theta}\left(x_{t}, t\right)\right)
 \end{equation}
 
 where $$ \mu_{\theta} $$ and $$ \Sigma_{\theta} $$ can be implemented using a U-Net or a Neural Network. When conditioning also on $$ x_{0}, p_{\theta}\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ has a closed form so we can use **Kulback-Leider divergence** as a loss for our model.
 
-For discrete domains, each element of $$ x_{t} $$ is a discrete random variable with K categories. Denote $$ x_t $$ as a stack of one-hot vectors, the process of adding noise can be written as:
+For discrete domains, each element of $$ x_{t} $$ is a discrete random variable with K categories. Denote $$ x_{t} $$ as a stack of one-hot vectors, the process of adding noise can be written as:
 
 \begin{equation}
-\label(Eq:DiscreteDiffusion)
+\label{Eq:Forward}
 q_{\left(x_{t} \mid x_{t-1}\right)} = \text{Cat}\left(x_{t}; p = x_{t-1} Q_{t}\right)
 \end{equation}
 
-where $$ \text{Cat}(\dot) $$ is a categorical distribution (i.e. the random variable can take one of K possible categories) and $$ Q\_{t} $$ is a transition matrix that is applied to each token in the sequence independently.
+where $$ \text{Cat}(z) $$ is a categorical distribution (i.e. the random variable can take one of K possible categories) and $$ Q_{t} $$ is a transition matrix that is applied to each token in the sequence independently.
 
 Therefore, for a given token, using Bayes theorem, it is easy to obtain that:
 
 \begin{equation}
-\label{Eq:D3PM}
-q\left(x_{t-1} \mid x_{t}, x_{0}\right) = \text{Cat} \big( x_{t-1}; p = \frac{x_{t} Q^{T}_{t} \odot x_{0}\bar{Q}_{t-1}}{x_{0}\bar{Q}_{t}x_{t}^{T}} \big)
+\label{Eq:Forward}
+q\left(x_{t-1} \mid x_{t}, x_{0}\right) = \text{Cat} \big( x_{t-1}; p = \frac{x_{t} Q^{T}\_{t} \odot x_{0}\bar{Q}\_{t-1}}{x_{0}\bar{Q}\_{t}x_{t}^{T}} \big)
 \end{equation}
 
 where $$ \bar{Q}_{t} = Q_{1}Q_{2} \dots Q_{t} $$. So with $$ q\left(x_{t-1} \mid x_{t}, x_{0}\right) $$ we can learn to reverse the diffusion process.
@@ -88,8 +88,8 @@ Luckily for us, [it can be shown](https://s-sahoo.com/mdlm) that the Loss for a 
 If so, the loss function can be rewritten as:
 
 \begin{equation}
-\label{Eq:LossFN}
-\mathbb{E}_{q}\int_{t=0}^{t=1} \frac{\alpha_{t}^{'}}{1 - \alpha_{t}} \sum_{l} log p_{\theta}\left(x_{t} \mid x_{0}) \cdot x_{0} dt
+\label{Eq:Forward}
+\mathbb{E}\_{q} \int_{t=0}^{t=1} \frac{\alpha_{t}^{'}}{1 - \alpha_{t}} \sum_{l} log p_{\theta}\left(x_{t} \mid x_{0}) \cdot x_{0} dt
 \end{equation}
 
 But this is exactly the **MLM loss function**. So, a BERT-based model can be finetuned to be used as a diffusion model. At each step we replace a different proportion $p$ of tokens with `[MASK]` using a variable $p \in (0.10, 0.90)$. In this way, the model is trained to replace `[MASK]` tokens with real ones in different conditions. During generation, we start from a completely masked sequence, and, at each denoising step, BERT will replace some proportion `[MASK]` with generated tokens, until the full sequence is constructed.

@@ -34,6 +34,17 @@ ninja.data = [{
             window.location.href = "/blog/2025/DiffusionDNABERT-new/";
           
         },
+      },{id: "post-mambacoders-find-interpretable-mamba-feature-circuits",
+        
+          title: "Mambacoders find interpretable Mamba feature circuits",
+        
+        description: "Transcoders adapted to Mamba models",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2025/mambacoder/";
+          
+        },
       },{id: "post-circuit-tracing-an-in-depth-explanation-about-creating-interpretability-circuits",
         
           title: "Circuit Tracing: An in-depth explanation about creating interpretability circuits",

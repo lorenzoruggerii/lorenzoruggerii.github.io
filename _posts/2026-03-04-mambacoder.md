@@ -99,7 +99,7 @@ $$
 h_{t} = \bar{A}_{t} h_{t-1} + \bar{B}_{t} x_{t} \\ y_{t} = C_{t} h_{t}
 $$
 
-where $ \bar{A}_{t}, \bar{B}_{t}, C_{t} $ are now all linear functions of the input $f \( x_{t} \)$. This input dependence is what gives the model its name<d-footnote>S6, standing for S4 with a <strong>S</strong>election mechanism computed via a <strong>S</strong>can</d-footnote> and is what allows it to selectively propagate or forget information depending on the content of the current token, rather than treating all inputs uniformly. This breaks LTI, and therefore Mamba cannot be view from a convolutional point of view, but since its state update is linear, outputs can be computed in parallel via a parallel scan <d-cite key="blelloch1989"></d-cite>. This overcomes the efficiency challenges avoiding materializing the large intermediate state in GPU HBM.
+where $ \bar{A}\_{t} , \bar{B}\_{t} , C_{t} $ are now all linear functions of the input $f \( x_{t} \)$. This input dependence is what gives the model its name<d-footnote>S6, standing for S4 with a <strong>S</strong>election mechanism computed via a <strong>S</strong>can</d-footnote> and is what allows it to selectively propagate or forget information depending on the content of the current token, rather than treating all inputs uniformly. This breaks LTI, and therefore Mamba cannot be view from a convolutional point of view, but since its state update is linear, outputs can be computed in parallel via a parallel scan <d-cite key="blelloch1989"></d-cite>. This overcomes the efficiency challenges avoiding materializing the large intermediate state in GPU HBM.
 
 ## The Mamba Block
 
@@ -208,7 +208,7 @@ $$
 f_{enc}^{(l', i')} \cdot \text{stack}_{h} (\sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h])
 $$
 
-where $ \text{stack}_{h} $ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $s(h) = sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}_{h} \( s(h) \) = \sum_{h} s(h)e(h)$, where $e(h)$ is the $h$-th standard basis vector, we get:
+where $ \text{stack}_{h} $ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $ s \( h \) = sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}_{h} \( s(h) \) = \sum_{h} s \( h \) e \( h \)$, where $e \( h \)$ is the $h$-th standard basis vector, we get:
 
 $$
 f_{enc}^{(l', i')} \cdot \text{stack}_{h}(s(h)) = \sum_{h=1}^{D} s(h) \cdot f_{enc}^{(l', i')}[h]

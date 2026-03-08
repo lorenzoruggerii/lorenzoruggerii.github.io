@@ -96,10 +96,10 @@ where $\bar{A}$ and $\bar{B}$ are the discretized versions of continuous-time pa
 Mamba <d-cite key="gu2023"></d-cite> addressed this limitation with a **selection mechanism**: rather than keeping $\bar{A}$, $\bar{B}$, $C$ fixed across time, they are made functions of the current input $x_{t}$, turning the time-invariant recurrence into a time-varying one:
 
 $$
-h_{t} = \bar{A}_{t}h_{t-1} + \bar{B}_{t}x_{t} \\ y_{t} = C_{t}h_{t}
+h_{t} = \bar{A}_{t} h_{t-1} + \bar{B}_{t} x_{t} \\ y_{t} = C_{t} h_{t}
 $$
 
-where $\bar{A}_{t}$, $\bar{B}_{t}$, and $C_{t}$ now all are linear functions of the input $f(x_{t})$. This input dependence is what gives the model its name<d-footnote>S6, standing for S4 with a **S**election mechanism computed via a **S**can</d-footnote> and is what allows it to selectively propagate or forget information depending on the content of the current token, rather than treating all inputs uniformly. This breaks LTI, and therefore Mamba cannot be view from a convolutional point of view, but since its state update is linear, outputs can be computed in parallel via a parallel scan <d-cite key="blelloch1989"></d-cite>. This overcomes the efficiency challenges avoiding materializing the large intermediate state in GPU HBM.
+where $\bar{A}_{t}, \bar{B}_{t}, C_{t}$ are now all linear functions of the input $f(x_{t})$. This input dependence is what gives the model its name<d-footnote>S6, standing for S4 with a <strong>S</strong>election mechanism computed via a <strong>S</strong>can</d-footnote> and is what allows it to selectively propagate or forget information depending on the content of the current token, rather than treating all inputs uniformly. This breaks LTI, and therefore Mamba cannot be view from a convolutional point of view, but since its state update is linear, outputs can be computed in parallel via a parallel scan <d-cite key="blelloch1989"></d-cite>. This overcomes the efficiency challenges avoiding materializing the large intermediate state in GPU HBM.
 
 ## The Mamba Block
 
@@ -107,7 +107,7 @@ The S6 layer sits inside a larger **Mamba block** (Figure 1), which wraps the se
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mambacoders/MambaBlock.png" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/MambaCoder/MambaBlock.png" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
@@ -211,25 +211,25 @@ $$
 where $\text{stack}_{h}$ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $s(h) = sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}_{h}(s(h)) = \sum_{h} s(h)e(h)$, where $e(h)$ is the $h$-th standard basis vector, we get:
 
 $$
-f_{enc}^{(l', i')} \cdot \text{stack}_{h}(s(h)) \eq \sum_{h=1}^{D} s(h) \cdot f_{enc}^{(l', i')}[h]
+f_{enc}^{(l', i')} \cdot \text{stack}_{h}(s(h)) = \sum_{h=1}^{D} s(h) \cdot f_{enc}^{(l', i')}[h]
 $$
 
 Substituting back and exchanging the order of summation:
 
 $$
-\eq \sum_{s=1}^{t} \sum_{h=1}^{D} sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h] \cdot f_{enc}^{(l', i')}[h]
+= \sum_{s=1}^{t} \sum_{h=1}^{D} sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h] \cdot f_{enc}^{(l', i')}[h]
 $$
 
 Fixing a specific head $h$ and source token $s$, the attribution from Mamba layer $l$, head $h$, token $s$ to feature $i'$ at token $t$ in layer $l'$ is therefore:
 
 $$
-\text{attr}((l, h, s) \to (l', i', t)) \eq C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h] \cdot f_{enc}^{(l', i')}[h]
+\text{attr}((l, h, s) \to (l', i', t)) = C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h] \cdot f_{enc}^{(l', i')}[h]
 $$
 
 With the new feature vector that will be:
 
 $$
-f' \eq C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s}  \cdot f_{enc}^{(l', i')}
+f' = C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s}  \cdot f_{enc}^{(l', i')}
 $$
 
 ### Handling the Convolution and Gate
@@ -241,13 +241,13 @@ Handling them precisely would require unrolling the convolution kernel and the g
 Concretely, for a given layer $l$ and token $s$, we compute the scaling factor of each operation as the ration of activations before and after it:
 
 $$
-\gamma_{\text{conv}^{(l, s)}} = \frac{\text{act\_after\_conv}^{(l,s)}}{\text{act\_before\_conv}^{(l,s)}}, \quad \gamma_{\text{gate}^{(l, s)}} = \frac{\text{act\_after\_gate}^{(l,s)}}{\text{act\_before\_gate}^{(l,s)}}
+\gamma_{\text{conv}^{(l, s)}} = \frac{\text{act_after_conv}^{(l,s)}}{\text{act_before_conv}^{(l,s)}}, \quad \gamma_{\text{gate}^{(l, s)}} = \frac{\text{act_after_gate}^{(l,s)}}{\text{act_before_gate}^{(l,s)}}
 $$
 
 and then rescale the feature vector accordingly as we trace it back toward the embeddings:
 
 $$
-f' \eq f' \odot \gamma_{\text{gate}}^{(l, s)} \odot \gamma_{\text{conv}}^{(l, s)}
+f' = f' \odot \gamma_{\text{gate}}^{(l, s)} \odot \gamma_{\text{conv}}^{(l, s)}
 $$
 
 While the conv could give us some attributions in the time domain, the gate is applied channel wise, so it's okay to apply scaling to each dimension.
@@ -262,7 +262,7 @@ The first hint came from a simple experiment. Given the prompt *"I'm so"*, the m
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid loading="eager" path="assets/img/mambacoders/discovering_the_feature.png" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid loading="eager" path="assets/img/MambaCoder/discovering_the_feature.png" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
@@ -286,7 +286,7 @@ To understand what feature 3498 is actually encoding, I projected its decoder di
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mambacoders/umap_tokens.png" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/MambaCoder/umap_tokens.png" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">
@@ -314,7 +314,7 @@ Having identified the feature, I used the circuit tracing algorithm to ask: wher
 
 <div class="row mt-3">
     <div class="col-sm mt-3 mt-md-0">
-        {% include figure.liquid path="assets/img/mambacoders/the_hungry_circuit.png" class="img-fluid rounded z-depth-1" %}
+        {% include figure.liquid path="assets/img/MambaCoder/the_hungry_circuit.png" class="img-fluid rounded z-depth-1" %}
     </div>
 </div>
 <div class="caption">

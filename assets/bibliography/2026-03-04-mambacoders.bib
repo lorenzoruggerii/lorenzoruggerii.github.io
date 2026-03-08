@@ -1,0 +1,268 @@
+@misc{cunningham2023,
+      title={Sparse Autoencoders Find Highly Interpretable Features in Language Models}, 
+      author={Hoagy Cunningham and Aidan Ewart and Logan Riggs and Robert Huben and Lee Sharkey},
+      year={2023},
+      eprint={2309.08600},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2309.08600}, 
+}
+
+@misc{dunefsky2024,
+      title={Transcoders Find Interpretable LLM Feature Circuits}, 
+      author={Jacob Dunefsky and Philippe Chlenski and Neel Nanda},
+      year={2024},
+      eprint={2406.11944},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG},
+      url={https://arxiv.org/abs/2406.11944}, 
+}
+
+@misc{gu2021,
+  doi = {10.48550/ARXIV.2111.00396},
+  url = {https://arxiv.org/abs/2111.00396},
+  author = {Gu,  Albert and Goel,  Karan and Ré,  Christopher},
+  keywords = {Machine Learning (cs.LG),  FOS: Computer and information sciences,  FOS: Computer and information sciences},
+  title = {Efficiently Modeling Long Sequences with Structured State Spaces},
+  publisher = {arXiv},
+  year = {2021},
+  copyright = {arXiv.org perpetual,  non-exclusive license}
+}
+
+@misc{gu2023,
+  doi = {10.48550/ARXIV.2312.00752},
+  url = {https://arxiv.org/abs/2312.00752},
+  author = {Gu,  Albert and Dao,  Tri},
+  keywords = {Machine Learning (cs.LG),  Artificial Intelligence (cs.AI),  FOS: Computer and information sciences,  FOS: Computer and information sciences},
+  title = {Mamba: Linear-Time Sequence Modeling with Selective State Spaces},
+  publisher = {arXiv},
+  year = {2023},
+  copyright = {Creative Commons Attribution 4.0 International}
+}
+
+@ARTICLE{blelloch1989,
+  author={Blelloch, G.E.},
+  journal={IEEE Transactions on Computers}, 
+  title={Scans as primitive parallel operations}, 
+  year={1989},
+  volume={38},
+  number={11},
+  pages={1526-1538},
+  keywords={Phase change random access memory;Algorithm design and analysis;Concurrent computing;Hardware;Artificial intelligence;Merging;Testing;Sorting;Parallel algorithms;Read-write memory},
+  doi={10.1109/12.42122}}
+
+@ARTICLE{Chen2026,
+  title         = "Achilles' Heel of Mamba: Essential difficulties of the Mamba
+                   architecture demonstrated by synthetic data",
+  author        = "Chen, Tianyi and Lin, Pengxiao and Wang, Zhiwei and Xu,
+                   Zhi-Qin John",
+  abstract      = "State Space Models (SSMs) have emerged as promising
+                   alternatives to attention mechanisms, with the Mamba
+                   architecture demonstrating impressive performance and linear
+                   complexity for processing long sequences. However, the
+                   fundamental differences between Mamba and Transformer
+                   architectures remain incompletely understood. In this work,
+                   we use carefully designed synthetic tasks to reveal Mamba's
+                   inherent limitations. Through experiments, we identify that
+                   Mamba's nonlinear convolution introduces an asymmetry bias
+                   that significantly impairs its ability to recognize
+                   symmetrical patterns and relationships. Using composite
+                   function and inverse sequence matching tasks, we demonstrate
+                   that Mamba strongly favors compositional solutions over
+                   symmetrical ones and struggles with tasks requiring the
+                   matching of reversed sequences. We show these limitations
+                   stem not from the SSM module itself but from the nonlinear
+                   convolution preceding it, which fuses token information
+                   asymmetrically. These insights provide a new understanding
+                   of Mamba's constraints and suggest concrete architectural
+                   improvements for future sequence models.",
+  month         =  jan,
+  year          =  2026,
+  copyright     = "http://creativecommons.org/licenses/by/4.0/",
+  archivePrefix = "arXiv",
+  primaryClass  = "cs.LG",
+  eprint        = "2509.17514"
+}
+
+@inproceedings{
+mamba3,
+title={Mamba-3: Improved Sequence Modeling using State Space Principles},
+author={Aakash Lahoti and Kevin Li and Berlin Chen and Caitlin Wang and Aviv Bick and J Zico Kolter and Tri Dao and Albert Gu},
+booktitle={The Fourteenth International Conference on Learning Representations},
+year={2026},
+url={https://openreview.net/forum?id=HwCvaJOiCj}
+}
+
+@ARTICLE{Ali2024,
+  title        = "The hidden attention of Mamba models",
+  author       = "Ali, Ameen and Zimerman, Itamar and Wolf, Lior",
+  abstract     = "The Mamba layer offers an efficient selective state space
+                  model (SSM) that is highly effective in modeling multiple
+                  domains, including NLP, long-range sequence processing, and
+                  computer vision. Selective SSMs are viewed as dual models, in
+                  which one trains in parallel on the entire sequence via an
+                  IO-aware parallel scan, and deploys in an autoregressive
+                  manner. We add a third view and show that such models can be
+                  viewed as attention-driven models. This new perspective
+                  enables us to empirically and theoretically compare the
+                  underlying mechanisms to that of the self-attention layers in
+                  transformers and allows us to peer inside the inner workings
+                  of the Mamba model with explainability methods. Our code is
+                  publicly available.",
+  year         =  2024,
+  primaryClass = "cs.LG",
+  eprint       = "2403.01590"
+}
+
+@ARTICLE{Nvidia2025,
+  title         = "{NVIDIA} Nemotron 3: Efficient and Open Intelligence",
+  author        = "{Nvidia} and Blakeman, Aaron and Grattafiori, Aaron and
+                   Basant, Aarti and Gupta, Abhibha and Khattar, Abhinav and
+                   Renduchintala, Adi and Vavre, Aditya and Shukla, Akanksha
+                   and Bercovich, Akhiad and Ficek, Aleksander and
+                   Shaposhnikov, Aleksandr and Kondratenko, Alex and Bukharin,
+                   Alexander and Milesi, Alexandre and Taghibakhshi, Ali and
+                   Liu, Alisa and Barton, Amelia and Mahabaleshwarkar, Ameya
+                   Sunil and Klein, Amir and Zuker, Amit and Geifman, Amnon and
+                   Shen, Amy and Bhiwandiwalla, Anahita and Tao, Andrew and
+                   Agrusa, Anjulie and Verma, Ankur and Guan, Ann and
+                   Mandarwal, Anubhav and Mehta, Arham and Aithal, Ashwath and
+                   Poojary, Ashwin and Ahamed, Asif and Mishra, Asit and
+                   Thekkumpate, Asma Kuriparambil and Dattagupta, Ayush and
+                   Zhu, Banghua and Sadeghi, Bardiya and Simkin, Barnaby and
+                   Lanir, Ben and Schifferer, Benedikt and Nushi, Besmira and
+                   Kartal, Bilal and Rouhani, Bita Darvish and Ginsburg, Boris
+                   and Norick, Brandon and Soubasis, Brandon and Kisacanin,
+                   Branislav and Yu, Brian and Catanzaro, Bryan and del Mundo,
+                   Carlo and Hwang, Chantal and Wang, Charles and Hsieh,
+                   Cheng-Ping and Zhang, Chenghao and Yu, Chenhan and Mungekar,
+                   Chetan and Patel, Chintan and Alexiuk, Chris and Parisien,
+                   Christopher and Neale, Collin and Meurillon, Cyril and
+                   Mosk-Aoyama, Damon and Su, Dan and Corneil, Dane and Afrimi,
+                   Daniel and Lo, Daniel and Rohrer, Daniel and Serebrenik,
+                   Daniel and Gitman, Daria and Levy, Daria and Stosic, Darko
+                   and Mosallanezhad, David and Narayanan, Deepak and
+                   Nathawani, Dhruv and Rekesh, Dima and Yared, Dina and
+                   Kakwani, Divyanshu and Ahn, Dong and Riach, Duncan and
+                   Stosic, Dusan and Minasyan, Edgar and Lin, Edward and Long,
+                   Eileen and Long, Eileen Peters and Segal, Elad and Lantz,
+                   Elena and Evans, Ellie and Ning, Elliott and Chung, Eric and
+                   Harper, Eric and Tramel, Eric and Galinkin, Erick and
+                   Pounds, Erik and Briones, Evan and Bakhturina, Evelina and
+                   Tsykunov, Evgeny and Ladhak, Faisal and Wang, Fay and Jia,
+                   Fei and Soares, Felipe and Chen, Feng and Galko, Ferenc and
+                   Sun, Frank and Siino, Frankie and Agam, Gal Hubara and
+                   Ajjanagadde, Ganesh and Bhatt, Gantavya and Prasad, Gargi
+                   and Armstrong, George and Shen, Gerald and Batmaz, Gorkem
+                   and Nalbandyan, Grigor and Qian, Haifeng and Sharma, Harsh
+                   and Ross, Hayley and Ngo, Helen and Hum, Herbert and Sahota,
+                   Herman and Wang, Hexin and Soni, Himanshu and Upadhyay,
+                   Hiren and Mao, Huizi and Nguyen, Huy C and Nguyen, Huy Q and
+                   Cunningham, Iain and Galil, Ido and Shahaf, Ido and Gitman,
+                   Igor and Loshchilov, Ilya and Schen, Itamar and Levy, Itay
+                   and Moshkov, Ivan and Golan, Izik and Putterman, Izzy and
+                   Kautz, Jan and Scowcroft, Jane Polak and Casper, Jared and
+                   Mitra, Jatin and Glick, Jeffrey and Chen, Jenny and Oliver,
+                   Jesse and Zhang, Jian and Zeng, Jiaqi and Lou, Jie and
+                   Zhang, Jimmy and Choi, Jinhang and Huang, Jining and Conway,
+                   Joey and Guman, Joey and Kamalu, John and Greco, Johnny and
+                   Cohen, Jonathan and Jennings, Joseph and Daw, Joyjit and
+                   Vialard, Julien Veron and Yi, Junkeun and Parmar, Jupinder
+                   and Xu, Kai and Zhu, Kan and Briski, Kari and Cheung,
+                   Katherine and Luna, Katherine and Wyss, Keith and Santhanam,
+                   Keshav and Shih, Kevin and Kong, Kezhi and Bhardwaj, Khushi
+                   and Shankar, Kirthi and Puvvada, Krishna C and Pawelec,
+                   Krzysztof and Anik, Kumar and McAfee, Lawrence and Sleiman,
+                   Laya and Derczynski, Leon and Ding, Li and Wei, Lizzie and
+                   Liebenwein, Lucas and Vega, Luis and Grover, Maanu and Van
+                   Segbroeck, Maarten and de Melo, Maer Rodrigues and Nazemi,
+                   Mahdi and Sreedhar, Makesh Narsimhan and Kilaru, Manoj and
+                   Ashkenazi, Maor and Romeijn, Marc and Chochowski, Marcin and
+                   Cai, Mark and Kliegl, Markus and Moosaei, Maryam and Kulka,
+                   Matt and Novikov, Matvei and Samadi, Mehrzad and Corpuz,
+                   Melissa and Wang, Mengru and Price, Meredith and Andersch,
+                   Michael and Boone, Michael and Evans, Michael and Martinez,
+                   Miguel and Khona, Mikail and Chrzanowski, Mike and Lee,
+                   Minseok and Dabbah, Mohammad and Shoeybi, Mohammad and
+                   Patwary, Mostofa and Mulepati, Nabin and Nabwani, Najeeb and
+                   Hereth, Natalie and Assaf, Nave and Habibi, Negar and Zmora,
+                   Neta and Haber, Netanel and Sessions, Nicola and Bhatia,
+                   Nidhi and Jukar, Nikhil and Pope, Nikki and Ludwig, Nikolai
+                   and Tajbakhsh, Nima and Ailon, Nir and Juluru, Nirmal and
+                   Sharma, Nishant and Hrinchuk, Oleksii and Kuchaiev, Oleksii
+                   and Delalleau, Olivier and Olabiyi, Oluwatobi and Argov,
+                   Omer Ullman and Puny, Omri and Tropp, Oren and Xie, Ouye and
+                   Chadha, Parth and Shamis, Pasha and Gibbons, Paul and
+                   Molchanov, Pavlo and Morkisz, Pawel and Dykas, Peter and
+                   Jin, Peter and Xu, Pinky and Januszewski, Piotr and Thombre,
+                   Pranav Prashant and Varshney, Prasoon and Gundecha, Pritam
+                   and Tredak, Przemek and Miao, Qing and Wan, Qiyu and
+                   Mahabadi, Rabeeh Karimi and Garg, Rachit and El-Yaniv, Ran
+                   and Zilberstein, Ran and Shafipour, Rasoul and Harang, Rich
+                   and Izzo, Rick and Shahbazyan, Rima and Garg, Rishabh and
+                   Borkar, Ritika and Gala, Ritu and Islam, Riyad and Hesse,
+                   Robert and Waleffe, Roger and Watve, Rohit and Koren, Roi
+                   and Zhang, Ruoxi and Hewett, Russell and Hewett, Russell J
+                   and Prenger, Ryan and Timbrook, Ryan and Mahdavi, Sadegh and
+                   Modi, Sahil and Kriman, Samuel and Lim, Sangkug and
+                   Kariyappa, Sanjay and Satheesh, Sanjeev and Kaji, Saori and
+                   Pasumarthi, Satish and Muralidharan, Saurav and Narentharen,
+                   Sean and Narenthiran, Sean and Bak, Seonmyeong and
+                   Kashirsky, Sergey and Poulos, Seth and Mor, Shahar and
+                   Ramasamy, Shanmugam and Acharya, Shantanu and Ghosh, Shaona
+                   and Sreenivas, Sharath Turuvekere and Thomas, Shelby and
+                   Fan, Shiqing and Gopal, Shreya and Prabhumoye, Shrimai and
+                   Pachori, Shubham and Toshniwal, Shubham and Ding, Shuoyang
+                   and Singh, Siddharth and Sun, Simeng and Ithape, Smita and
+                   Majumdar, Somshubra and Singhal, Soumye and Sergienko, Stas
+                   and Alborghetti, Stefania and Ge, Stephen and Devare, Sugam
+                   Dipak and Barua, Sumeet Kumar and Panguluri, Suseella and
+                   Gupta, Suyog and Priyadarshi, Sweta and Akter, Syeda Nahida
+                   and Bui, Tan and Ene, Teodor-Dumitru and Kong, Terry and Do,
+                   Thanh and Blankevoort, Tijmen and Moon, Tim and Balough, Tom
+                   and Asida, Tomer and Natan, Tomer Bar and Ronen, Tomer and
+                   Konuk, Tugrul and Vashishth, Twinkle and Karpas, Udi and De,
+                   Ushnish and Noorozi, Vahid and Noroozi, Vahid and
+                   Srinivasan, Venkat and Elango, Venmugil and Cui, Victor and
+                   Korthikanti, Vijay and Rao, Vinay and Kurin, Vitaly and
+                   Lavrukhin, Vitaly and Anisimov, Vladimir and Jiang, Wanli
+                   and Ahmad, Wasi Uddin and Du, Wei and Ping, Wei and Zhou,
+                   Wenfei and Jennings, Will and Zhang, William and Prazuch,
+                   Wojciech and Ren, Xiaowei and Karnati, Yashaswi and Choi,
+                   Yejin and Meyer, Yev and Wu, Yi-Fu and Zhang, Yian and Qin,
+                   Yigong and Lin, Ying and Geifman, Yonatan and Fu, Yonggan
+                   and Subara, Yoshi and Suhara, Yoshi and Gao, Yubo and Moshe,
+                   Zach and Dong, Zhen and Zhu, Zhongbo and Liu, Zihan and
+                   Chen, Zijia and Yan, Zijie",
+  abstract      = "We introduce the Nemotron 3 family of models - Nano, Super,
+                   and Ultra. These models deliver strong agentic, reasoning,
+                   and conversational capabilities. The Nemotron 3 family uses
+                   a Mixture-of-Experts hybrid Mamba-Transformer architecture
+                   to provide best-in-class throughput and context lengths of
+                   up to 1M tokens. Super and Ultra models are trained with
+                   NVFP4 and incorporate LatentMoE, a novel approach that
+                   improves model quality. The two larger models also include
+                   MTP layers for faster text generation. All Nemotron 3 models
+                   are post-trained using multi-environment reinforcement
+                   learning enabling reasoning, multi-step tool use, and
+                   support granular reasoning budget control. Nano, the
+                   smallest model, outperforms comparable models in accuracy
+                   while remaining extremely cost-efficient for inference.
+                   Super is optimized for collaborative agents and high-volume
+                   workloads such as IT ticket automation. Ultra, the largest
+                   model, provides state-of-the-art accuracy and reasoning
+                   performance. Nano is released together with its technical
+                   report and this white paper, while Super and Ultra will
+                   follow in the coming months. We will openly release the
+                   model weights, pre- and post-training software, recipes, and
+                   all data for which we hold redistribution rights.",
+  month         =  dec,
+  year          =  2025,
+  copyright     = "http://creativecommons.org/licenses/by/4.0/",
+  archivePrefix = "arXiv",
+  primaryClass  = "cs.CL",
+  eprint        = "2512.20856"
+}
+
+
+

@@ -23,7 +23,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/publications/";
           },
-        },{id: "post-your-favourite-genomic-model-knows-more-than-you-think",
+        },{id: "post-mambacoders-find-interpretable-mamba-feature-circuits",
+        
+          title: "Mambacoders find interpretable Mamba feature circuits",
+        
+        description: "Transcoders adapted to Mamba models",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/mambacoder/";
+          
+        },
+      },{id: "post-your-favourite-genomic-model-knows-more-than-you-think",
         
           title: "Your Favourite Genomic Model knows more than you think",
         
@@ -32,17 +43,6 @@ ninja.data = [{
         handler: () => {
           
             window.location.href = "/blog/2025/DiffusionDNABERT-new/";
-          
-        },
-      },{id: "post-mambacoders-find-interpretable-mamba-feature-circuits",
-        
-          title: "Mambacoders find interpretable Mamba feature circuits",
-        
-        description: "Transcoders adapted to Mamba models",
-        section: "Posts",
-        handler: () => {
-          
-            window.location.href = "/blog/2025/mambacoder/";
           
         },
       },{id: "post-circuit-tracing-an-in-depth-explanation-about-creating-interpretability-circuits",

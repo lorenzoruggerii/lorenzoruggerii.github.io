@@ -208,7 +208,7 @@ $$
 f_{enc}^{(l', i')} \cdot \text{stack}_{h} (\sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h])
 $$
 
-where $ \text{stack}_{h} $ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $ s \( h \) = sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}_{h} \( s(h) \) = \sum_{h} s \( h \) e \( h \)$, where $e \( h \)$ is the $h$-th standard basis vector, we get:
+where $ \text{stack}\_{h} $ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $ s(h) = sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}\_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}\_{h} s(h) = \sum_{h} s(h)e(h) $, where $e(h)$ is the $h$-th standard basis vector, we get:
 
 $$
 f_{enc}^{(l', i')} \cdot \text{stack}_{h}(s(h)) = \sum_{h=1}^{D} s(h) \cdot f_{enc}^{(l', i')}[h]
@@ -217,7 +217,7 @@ $$
 Substituting back and exchanging the order of summation:
 
 $$
-= \sum_{s=1}^{t} \sum_{h=1}^{D} sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h] \cdot f_{enc}^{(l', i')}[h]
+= \sum_{s=1}^{t} \sum_{h=1}^{D} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h] \cdot f_{enc}^{(l', i')}[h]
 $$
 
 Fixing a specific head $h$ and source token $s$, the attribution from Mamba layer $l$, head $h$, token $s$ to feature $i'$ at token $t$ in layer $l'$ is therefore:

@@ -4,7 +4,7 @@ title: "Mambacoders find interpretable Mamba feature circuits"
 description: "Transcoders adapted to Mamba models"
 tags: [Mechanistic Interpretability, AI, Mamba, SSMs]
 giscus_comments: true
-date: 2025-08-26
+date: 2026-03-09
 featured: false
 mermaid:
   enabled: true
@@ -208,7 +208,7 @@ $$
 f_{enc}^{(l', i')} \cdot \text{stack}_{h} (\sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}_{s} x^{(l, s)}[h])
 $$
 
-where $ \text{stack}\_{h} $ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $ s(h) = sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}\_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}\_{h} s(h) = \sum_{h} s(h)e(h) $, where $e(h)$ is the $h$-th standard basis vector, we get:
+where $ \text{stack}\_{h} $ assembles the scalar SSM outputs across all heads into a single $D$-dimensional vector. Defining $ s(h) = \sum_{s=1}^{t} C_{t}^{(h)} \prod_{j=s}^{t}\bar{A}^{j} \bar{B}\_{s} x^{(l, s)}[h]$ and writing the stack as $ \text{stack}\_{h}(s(h)) = \sum_{h} s(h)e(h) $, where $e(h)$ is the $h$-th standard basis vector, we get:
 
 $$
 f_{enc}^{(l', i')} \cdot \text{stack}_{h}(s(h)) = \sum_{h=1}^{D} s(h) \cdot f_{enc}^{(l', i')}[h]

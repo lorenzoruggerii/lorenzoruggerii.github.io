@@ -299,14 +299,14 @@ The feature vector lands squarely in a cluster of food-related tokens: *fork, bo
 
 To further validate the feature's semantics, I ran a set of generation experiments: I gave *"Once Upon a Time"* as a prompt to my model and I generated completions both with and without feature 3498 artificially activated. The results are telling:
 
-| Without feature | With feature |
+| Without feature | With feature (LiscoGPT) |
 | :------------ | :------------ |
-|*there was a little girl named Lily. She loved to play outside...*    |*there was a little girl named Lily. She had a yummy dinner with her food. Her...*|
-|*there were two friends called Jack and Stop...*|*a mummy was cooking. She was baking a cake inside...*|
-|*there was a little girl who liked to skip...*|*there was a little girl who loved to eat her dinner. Every night she would eat dinner and*|
-|*a girl named Jane was in her garden with her dad. Jane was feeling serious about the sunshine...*|*a little girl named Anna was in her kitchen. She wanted to help her mom. A...*|
+|*there was a little girl named Lily. She loved to play outside...*    |*there was a little girl named Lily. She had a yummy **dinner** with her food. Her...*|
+|*there were two friends called Jack and Stop...*|*a mummy was **cooking**. She was **baking a cake** inside...*|
+|*there was a little girl who liked to skip...*|*there was a little girl who loved to **eat her dinner**. Every night she would eat dinner and*|
+|*a girl named Jane was in her garden with her dad. Jane was feeling serious about the sunshine...*|*a little girl named Anna was in her **kitchen**. She wanted to help her mom. A...*|
 
-Every time the feature is active, the model steers the story toward food, cooking, or eating, regardless of the original context. Feature 3498 is a **food/hunger** feature.
+Every time the feature is active, the model steers the story toward food, cooking, or eating, regardless of the original context, and, most importantly, maintaning coherence in the output sentences. Feature 3498 is a **food/hunger** feature.
 
 ### Tracing the Circuit
 

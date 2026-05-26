@@ -253,9 +253,13 @@ $$
 \Delta s_t^{(n)} = \frac{\partial f}{\partial s}(s_{t-1}^{(n)}) \Delta s_{t-1}^{(n-1)} - r_{t}(s^{(i)})
 $$
 
-This **lower triangular with diagonal blocks** structure allows us to solve $J(s)^{-1} r(s)$ in parallel using a backward substitution algorithm, recovering $O(\log T)$ sequential depth instead of $O(T)$.
+But, if you see closer, this is now a **Linear recurrence!**. This means that we can apply parallel algorithms like Blelloch scan to solve this in parallel. This means that now each iteration can be solved in $O(logT)$ time instead of $O(T)$, which for huge sequences is a big win!
 
-The core DEER iteration loop looks like this:
+There is a subtlety, however. The cost of a parallel scan depends from which update rule we want to use. Here, each update costs a matrix multiplication between two matrices of dimensionality $D \times D$, which is $O(D^3)$. However, we can surpass this by using element-wise multiplication. This is ok, since DEER's convergence is not strictly linked to exact computation of the Jacobians. This means that we can reduce the work done from each step of the parallel scan, without hurting convergence too much.
+
+Moreover, the success of DEER is highly dependent from the **number of iterations** we need to make to get the convergence (i.e. $r(s) = 0$). Luckily (for me), 20 iterations were sufficient to get the convergence for DeltaNet (with tanh). This means that for $L >> 20$, we get a significant speedup.
+
+Now it's time to get things done. The core DEER iteration loop looks like this:
 
 ```python
 def deer_solve(
@@ -307,7 +311,9 @@ The key insight: while computing Jacobians (Step 2) requires evaluating the func
 
 ## Implementation using Triton
 
-To make DEER efficient, we can't afford to compute residuals and Jacobians naively. Instead, we use **Triton**, a language for writing GPU kernels, to fuse the computation:
+To make DEER efficient, we can't afford to compute residuals and Jacobians naively. Instead, we use **Triton**, a language for writing GPU kernels, to fuse the computation.
+
+In particular, I first started writing the kernel for calculating the residuals and the jacobians together. This is because these two quantities required the same inputs, so it's convenient to fuse their computations together to avoid reading/writing too much from the GPU HBM.
 
 ```python
 @triton.jit
@@ -350,19 +356,43 @@ def residual_jacobians_fused_kernel_tiled(
 
 This kernel is **work-efficient**: by tiling the computation, we avoid materializing large temporary matrices, and multiple GPU cores can work on different tiles in parallel. This is where the practical speedup comes from.
 
+Then, the remaining part is just to combine all using an associative scan. I've used triton's native associative scan function to handle this.
+
+So, after all this, GPUs are going brrr?
+
 ## Experimental Results
 
-Testing DeltaDEER on a range of benchmarks reveals a striking picture: the model sits at the sweet spot between expressivity and efficiency.
+I tried DeltaDEER with a bunch of sequence lengths, for an input with a reasonable number of heads $H=8$ and a reasonable head dimension $D=32$. 
 
-- On **language modeling** tasks, DeltaNet achieves near-transformer performance with significantly lower KV cache memory.
-- On **long-context tasks**, the constant-time inference of the recurrent formulation shines, dramatically outpacing transformers on sequences beyond their training length.
-- **Training throughput** remains competitive with transformers, validating that DEER parallelization and Triton kernel fusion work in practice.
+First of all, I checked whether my algorithm was converging to the ground truth (i.e. the sequential scan).
 
-The results suggest that sacrificing a small amount of training efficiency—going from fully parallel to logarithmically sequential—buys back *inference* efficiency that transformers cannot match.
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/deltadeer/convergence.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 3. Convergence of DeltaDEER.</strong>. Absolute error between DeltaDEER and DeltaNet (with tanh) in sequential mode. The absolute error is around $1e^{-6}$ for all timesteps.
+</div>
+
+Luckily, it converges. After 20 iterations, DeltaDEER converges to the result obtained using the sequential scan. But how faster are we going?
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/deltadeer/scalability.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 4. Scalability of DeltaDEER (forward pass).</strong>. Running times for different sequence lengths. DeltaDEER achieves a 10-12x stable speedup in the forward pass with respect to torch sequential implementation.
+</div>
+
+Yeah! We have achieved a 10-12x speedup over torch implementation. From the running times, this means that now running DeltaNet (with tanh) using a huge sequence length is now feasible.
 
 ## Conclusions
 
 DeltaDEER shows that the transformer-RNN tradeoff is not inevitable. By grounding the RNN recurrence in the delta rule from optimization and applying DEER's parallelization technique, we recover a model that balances both regimes.
+
+In this moment, I only parallelized the forward pass. I think that there is a lot room for improvement (e.g. I think that I could apply a chunkwise parallel scan, or try to use other methods rather than DEER for parallelizing), but this is a nice starting point. Moreover, also the backward pass could be optimized.
 
 The deeper insight is philosophical: attention, RNNs, and recurrent memory are not fundamentally different computation types. They are different *framings* of the same idea—accumulating information over time—and by choosing the right mathematical formalism, we can interpolate between them.
 

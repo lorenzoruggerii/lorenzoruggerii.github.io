@@ -1,7 +1,7 @@
 ---
 layout: distill
 title: "DeltaDEER: When models wear antlers"
-description: "Using Newton's method to make transformers faster at inference"
+description: "Using Newton's method to parallelize nonlinear recurrence of DeltaNet"
 tags: [Transformers, Efficiency, State Space Models, Linear Attention, DEER]
 giscus_comments: true
 date: 2026-05-26
@@ -21,7 +21,7 @@ published: true
 pretty_table: true
 
 authors:
-  - name: Lorenzo Ruggieri
+  - name: Lorenzo Ruggeri
 
 bibliography: 2026-05-26-deltadeer.bib
 
@@ -30,12 +30,12 @@ toc:
   - name: The Fundamental Tradeoff
   - name: From Attention to RNNs
   - name: The Delta Rule
-  - name: DeltaNet: Adding Nonlinearity
+  - name: Adding Nonlinearity to DeltaNet
   - name: Parallelizing with DEER
     subsections:
       - name: Newton's Method for Sequences
       - name: The Jacobian Structure
-  - name: Implementation: Fused Triton Kernels
+  - name: Implementation using Triton
   - name: Experimental Results
   - name: Conclusions
 
@@ -62,15 +62,15 @@ Transformers have conquered natural language processing, but they come with an u
 
 This post introduces **DeltaDEER**: a method that asks what if you could have both? What if you could take the linearized structure of attention—expressed through a simple recurrence rule borrowed from control theory—and recover the parallelizability of transformers using a classical technique from numerical optimization: **Newton's method**?
 
-The name is a hint. DEER stands for Differential Error Elimination Rule, a technique for parallelizing non-linear RNNs. And like a deer with antlers, DeltaDEER grows something beautiful out of a simple structure.
+The name is a hint. DEER stands for "non-linear Differential Equation as fixed point itERation", a technique for parallelizing non-linear RNNs. And like a deer with antlers, DeltaDEER grows something beautiful out of a simple structure.
 
 ## The Fundamental Tradeoff
 
 To understand why DeltaDEER exists, we need to understand the asymmetry between training and inference.
 
-**Transformers** excel at *training*: attention is parallelizable, allowing you to compute all timesteps simultaneously. But at *inference*, when you generate token-by-token, you accumulate a **KV cache**—a growing store of all previous keys and values. Computing attention over this cache costs $O(L^2)$ for a sequence of length $L$, making long-context generation prohibitively expensive.
+**Transformers** excel at *training*: attention is parallelizable, allowing you to compute all timesteps simultaneously. But at *inference*, when you generate token-by-token, you accumulate a **KV cache**—a growing store of all previous keys and values. Computing attention over this cache costs $O(L^2)$ for a sequence of length $L$. Even if it's squared in the sequence length, it's fully parallelizable. The real bottleneck comes from the fact that the KV cache occupies $O(BHLD)$, and for large batch size $B$, and a high number of heads $H$, the dipendence from the sequence length $L$ prohibits to store such a large amount of data into the GPU HBM.
 
-**RNNs** suffer the opposite fate. Their recurrent structure (hidden state updates sequentially, step by step) makes them painfully slow to train—you cannot parallelize across time. But at inference, they shine: each new token requires only a constant-time update to the hidden state, independent of sequence length.
+**RNNs** suffer the opposite fate. Their recurrent structure (hidden state updates sequentially, step by step) makes them painfully slow to train—you cannot parallelize across time. But at inference, they shine: each new token requires only a constant-time update to the hidden state, independent of sequence length. So, for a sequence of length $L$, you pay $O(L)$ time. The problem is that RNN state updates are usually nonlinear, which means that you cannot parallelize them across the time dimension.
 
 The question becomes: can we design a model that combines the best of both worlds?
 
@@ -82,33 +82,63 @@ $$
 \text{Attn}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d}}\right)V
 $$
 
-Under certain approximations—linearizing the softmax, replacing it with a kernel function—this becomes:
+As seen previously, one of the bottlenecks of attention is the materialization of the $L \times L$ attention matrix $QK^T$, which require $O(L^2d)$ computations in its naive form. However, if one removes the sofmax: 
 
 $$
-y_t = \frac{\sum_{s=1}^{t} \phi(q_t, k_s) v_s}{\sum_{s=1}^{t} \phi(q_t, k_s)}
+y_t = \frac{\sum_{s=1}^{t} q_t k_s v_s}{\sum_{s=1}^{t} q_t k_s}
 $$
 
-where $\phi$ is a similarity kernel. This is precisely the form of a **recurrent memory**: the output at $t$ depends on accumulated information from all past timesteps, and can be computed incrementally.
+now, using associativity of matrix multiplication, we can first multiply keys with values with the sequence axis as the reduction axis, paying $O(Ld^2)$ computations, before multiplying everything for $q_t$.
+
+This is the idea behind linear attention paper, which explains how removing that softmax allows to recognize a recurrence into the attention calculation. Indeed, we can define a state $S_i = k_i v_i$, and turn our linearized attention into a recurrence.
+
+$$
+y_t = q_t S_t, \ \ S_t = S_{t-1} + k_tv_t
+$$
+
+The denominator can be handled by an auxiliary state that collects just the keys.
+
+Now the real problem is that removing that softmax will decrease a lot the performances. Moreover, even if in theory linear attention is more efficient than softmax attention, we will need to wait until Flash Linear Attention paper to have a full implementation that can beat FlashAttention (which instead computes full softmax attention).
+
+So, how can we improve this?
 
 ## The Delta Rule
 
-Here's where things get interesting. Instead of treating the RNN hidden state as a simple accumulator, we can view it as the solution to an optimization problem. Consider the **delta rule** from the neuroscience and control theory literature:
+Here's where things get interesting. Linear Attention is built on the idea that removing the softmax allows to improve the (theoretical) efficiency of attention. The real problem is that it is not built on some underlying idea that can help on natural language tasks.
+
+So, Instead of treating the RNN hidden state as a simple accumulator, we can view it as the solution to an optimization problem. Here comes another question: which **optimization problem** do we want to solve?
+
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/deltadeer/zoology.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 1. Associative Recall task.</strong>. Zoology paper describes associative recall as an important subtask for natural language processing performances. Associative recall means being able, given a key token, to successfully return the value token associated to that key (e.g. Key: Hakuna, Value: Matata).
+</div>
+
+People at Hazy Research showed in their Zoology paper that Associative Recall Helps a lot for Natural Language Processing tasks (**Figure 1**). So let's start optimizing for this task. How can we do this? As always in deep learning: **define a loss function**.
 
 $$
-m_{t+1} = m_t - \beta (m_t k_t - v_t) k_t^T
+\min_m \frac{1}{2} \sum_{i=0}^{T} \|v_i - m k_i\|^2
+$$
+
+At every timestep, given a key $k_i$, we compare the value returned by our RNN memory $m$ associated to that key with the corresponding value $v_i$. Of course we would like to find the best memory that minimizes the loss. So, let's apply SGD.
+
+1. Calculate the gradient for timestep $t$: $G_t = -(v_t - m_t k_t)k_{t}^{T}$.
+2. Apply SGD as state update: $m_{t+1} = m_t - \beta_{t}G_t$
+
+This means that our update rule becomes:
+
+$$
+m_{t+1} = m_t + \beta_{t} (m_t k_t - v_t) k_t^T
 $$
 
 where:
 - $m_t$ is the memory matrix at time $t$
 - $v_t$ is the "value" signal (what we're trying to remember)
 - $k_t$ is the "key" signal (what we're matching against)
-- $\beta$ is a learning rate
-
-This rule can be understood as a **gradient step** in a simple loss function:
-
-$$
-\min_m \frac{1}{2} \sum_{i=0}^{T} \|v_i - m k_i\|^2
-$$
+- $\beta$ is a learning rate. In this case, I decided to use selective $\beta_{t}$ and to calculate it for each timestep.
 
 In code, the update rule looks like this:
 
@@ -129,59 +159,44 @@ def update_rule(
     return torch.tanh(M_new) if use_tanh else M_new
 ```
 
-The delta rule elegantly converts memory into a recurrent computation, and because each update depends only on the current moment, it parallelizes naturally—or so it would seem.
+This is exactly the delta rule (with or without nonlinearity) described in DeltaNet paper.
 
-## DeltaNet: Adding Nonlinearity
+## Adding Nonlinearity to DeltaNet
 
-The linear delta rule works, but transformers owe much of their power to nonlinearity. What happens if we add a nonlinearity to the update rule?
+The linear delta rule works, as demonstrated from DeltaNet results, where DeltaNet outperforms Transformers (and other linear RNNs like Mamba) on The Pile dataset at different scales (400M and 1.3B).
+
+However, nonlinearities are essential to increase expressivity of a model. Nonlinear RNNs can solve tasks (like Parity), that linear RNNs cannot do, unless we do some tricks on the eigenvalues of the state update matrix.
+
+So, why don't we add a nonlinearity to DeltaNet and see what happpens? The recurrent update now becomes:
 
 $$
 m_{t+1} = \sigma\left(m_t - \beta (m_t k_t - v_t) k_t^T\right)
 $$
 
-where $\sigma$ is an activation function like $\tanh$. This creates **DeltaNet**: a recurrent model with genuine sequential depth, where nonlinearity flows through time.
+where $\sigma$ is an activation function like $\tanh$.
 
-The nonlinearity makes the model more expressive but destroys the key property we relied on: **parallelizability**. Now you cannot compute all timesteps independently; each step depends on the previous nonlinear activation. We're back to the RNN problem.
+I tested it on a very tiny dataset, called TinyStories, to see how it performed against original DeltaNet and a Transformer. 
 
-To trace how perturbations flow through the nonlinearity, we need the **Jacobian**: the derivative of $m_{t+1}$ with respect to $m_t$:
+<div class="row mt-3">
+    <div class="col-sm mt-3 mt-md-0">
+        {% include figure.liquid loading="eager" path="assets/img/deltadeer/perplexity_comparison.png" class="img-fluid rounded z-depth-1" %}
+    </div>
+</div>
+<div class="caption">
+    <strong>Fig: 2. Performances on TinyStories for Transformer, DeltaNet, and DeltaNet (with tanh).</strong>. Perplexity comparison across Transfomer, DeltaNet, and DeltaNet (with tanh) trained on TinyStories dataset. DeltaNet (with tanh) exhibits the lowest perplexity on the dataset.
+</div>
 
-$$
-\frac{\partial m_{t+1}}{\partial m_t} = \sigma'(m_t) \cdot (I - \beta k_t k_t^T)
-$$
+The nonlinearity makes the model more expressive but destroys the key property we relied on: **parallelizability**. Now you cannot compute all timesteps independently; each step depends on the previous nonlinear activation. Training DeltaNet (with tanh) required a lot of time, compared to the parallel implementation for attention computation (torch uses _FlashAttention_). We're back to the RNN problem.
 
-In code:
-
-```python
-def compute_jacobian(
-    M_t: torch.Tensor,      # (B, H, D, D)
-    beta_t: torch.Tensor,   # (B, H)
-    k_t: torch.Tensor,      # (B, H, D)
-    v_t: torch.Tensor,      # (B, H, D)
-) -> torch.Tensor:
-    """Calculate the local Jacobian at time t."""
-    # Recompute pre-tanh state
-    M_tilde = update_rule(k_t, v_t, M_t, beta_t, use_tanh=False)
-    
-    # Compute derivative of tanh
-    dtanh = 1 - torch.pow(torch.tanh(M_tilde), 2)
-    
-    # Compute (I - beta * k @ k^T)
-    kkT = torch.einsum("bhv,bhk->bhvk", k_t, k_t)
-    outer = torch.eye(D) - beta_t.unsqueeze(-1).unsqueeze(-1) * kkT
-    
-    # Jacobian is their product (element-wise by tanh derivative)
-    return dtanh * outer
-```
-
-Unless... we use a different tool.
+So, what we can do? Luckily for us, some literature efforts have been made for parallelizing non-linear state updates.
 
 ## Parallelizing with DEER
 
-This is where **DEER** (Differential Error Elimination Rule) enters the scene. DEER is a method for parallelizing non-linear sequential models by leveraging a insight from classical numerical analysis: **Newton's method**.
+This is where **DEER** (non-linear Differential Equation as fixed point itERations) enters the scene. DEER is a method for parallelizing non-linear sequential models by leveraging a insight from classical numerical analysis: **Newton's method**.
 
 ### Newton's Method for Sequences
 
-Consider finding the fixed point of a non-linear function $f$. Newton's method iterates:
+Consider finding a zero of a non-linear function $f$. Newton's method iterates:
 
 $$
 x_{n+1} = x_n - \frac{f(x_n)}{f'(x_n)}
@@ -189,11 +204,24 @@ $$
 
 This converges quadratically when you're near the solution. Now, imagine applying this idea across a sequence: instead of computing states sequentially as $s_t = f(s_{t-1}, x_t)$, we reframe the problem as finding values $s_0, s_1, \ldots, s_T$ that satisfy a system of constraints.
 
-The DEER method treats this constraint-satisfaction problem as an optimization task. By exploiting the **triangular Jacobian structure** of the recurrent computation—where $s_t$ depends on $s_{t-1}$ but $s_{t-1}$ doesn't depend on $s_t$—we can parallelize the solve using block-wise Newton iteration.
+The idea starts from defining a _residual function_:
+
+$$
+r(s) = [s_1 - f(s_0), s_2 - f(s_1), \ldots , s_T - f(s_{T-1})]
+$$
+
+where $f$ is just the update rule done by the model.
+
+Just by looking at $r(s)$, we can see that, if $r(s) = 0$, then we have found our model states $s_0, s_1, \ldots, s_T$. So, we can **apply Newton's method**!
+
+To apply Newton's method, we need to compute the Jacobian of the given function, and invert it (the derivative is at the denominator in the formula). However, the Jacobian is a $TD \times TD$ matrix, where $T$ is the sequence length and $D$ is the dimensionality of each $s_i$. So, it's a huge matrix to store. Moreover, we would need to invert it, and this would take $O(T^3)$ time. Infeasible. And this is just for one step of Newton's method, and we don't know a priori how many iterations we need.
+
+But, wait a minute... Let's look at the structure of the Jacobian and see whether we can find something interesting.
+
 
 ### The Jacobian Structure
 
-The beauty of sequential dependencies is that they create a sparse Jacobian matrix:
+The beauty of sequential dependencies is that they create a sparse Jacobian matrix. Indeed, from the residual, we can see that each entry $r_i$ depends only from $s_i$ and $s_{i-1}$. So, the Jacobian will be a block diagonal matrix:
 
 $$
 J(s) = \begin{pmatrix}
@@ -204,6 +232,22 @@ I_D & 0 & \cdots & 0 & 0 \\
 0 & 0 & \cdots & \frac{\partial f}{\partial s}(s_{T-1}) & I_D
 \end{pmatrix}
 $$
+
+Moreover, starting from the original Newton's method:
+
+$$
+s_{n+1} = s_n - r(s)J^{-1}(r(s))
+$$
+
+we can reformulate it like this:
+
+$$
+\Delta s J(r(s)) = -r(s)
+$$
+
+avoiding to invert the Jacobian matrix.
+
+Now we can use the **diagonal block structure** of the Jacobian to see which kind of linear system we need to solve
 
 This **lower triangular with diagonal blocks** structure allows us to solve $J(s)^{-1} r(s)$ in parallel using a backward substitution algorithm, recovering $O(\log T)$ sequential depth instead of $O(T)$.
 
@@ -257,7 +301,7 @@ def deer_solve(
 
 The key insight: while computing Jacobians (Step 2) requires evaluating the function at each timestep, we do it in **data-parallel** fashion across all timesteps simultaneously. Then, solving the linear system (Step 3) uses the triangular structure to compute updates in logarithmic depth—allowing us to reconstruct the full sequence in $O(\log T)$ sequential steps rather than $O(T)$.
 
-## Implementation: Fused Triton Kernels
+## Implementation using Triton
 
 To make DEER efficient, we can't afford to compute residuals and Jacobians naively. Instead, we use **Triton**, a language for writing GPU kernels, to fuse the computation:
 

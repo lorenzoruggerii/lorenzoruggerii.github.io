@@ -56,6 +56,13 @@ _styles: >
   }
 ---
 
+<figure>
+  <img src="/assets/img/deltadeer.png" alt="DeltaDEER architecture combining parallel training with efficient inference" style="width: 100%;">
+  <figcaption>
+    <strong>DeltaDEER: when models wear antlers.</strong>
+  </figcaption>
+</figure>
+
 ## Introduction
 
 Transformers have conquered natural language processing, but they come with an uncomfortable secret: they're terrible at inference. While attention-based models train in parallel with impressive throughput, generating a single token at a time requires scanning the entire past—an operation that scales quadratically with sequence length. Meanwhile, an old idea keeps whisper in the dark: RNNs. Notoriously slow to train but lightning-fast at inference, they compute the next token in constant time, independent of context length.

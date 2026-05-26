@@ -236,18 +236,22 @@ $$
 Moreover, starting from the original Newton's method:
 
 $$
-s_{n+1} = s_n - r(s)J^{-1}(r(s))
+s_{n+1} = s_n - J^{-1}(r(s))r(s)
 $$
 
 we can reformulate it like this:
 
 $$
-\Delta s J(r(s)) = -r(s)
+J(r(s))\Delta s  = -r(s)
 $$
 
 avoiding to invert the Jacobian matrix.
 
-Now we can use the **diagonal block structure** of the Jacobian to see which kind of linear system we need to solve
+Now we can use the **diagonal block structure** of the Jacobian to see which kind of linear system we need to solve. Unrolling the above linear system yields us, for every timestep $t$, at iteration $n$:
+
+$$
+\Delta s_t^{(n)} = \frac{\partial f}{\partial s}(s_{t-1}^{(n)}) \Delta s_{t-1}^{(n-1)} - r_{t}(s^{(i)})
+$$
 
 This **lower triangular with diagonal blocks** structure allows us to solve $J(s)^{-1} r(s)$ in parallel using a backward substitution algorithm, recovering $O(\log T)$ sequential depth instead of $O(T)$.
 

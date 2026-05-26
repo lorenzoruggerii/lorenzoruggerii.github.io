@@ -62,7 +62,7 @@ Transformers have conquered natural language processing, but they come with an u
 
 This post introduces **DeltaDEER**: a method that asks what if you could have both? What if you could take the linearized structure of attention—expressed through a simple recurrence rule borrowed from control theory—and recover the parallelizability of transformers using a classical technique from numerical optimization: **Newton's method**?
 
-The name is a hint. DEER stands for "non-linear Differential Equation as fixed point itERation", a technique for parallelizing non-linear RNNs. And like a deer with antlers, DeltaDEER grows something beautiful out of a simple structure.
+The name is a hint. DEER stands for "non-linear Differential Equation as fixed point itERation", a technique for parallelizing non-linear RNNs. And like a deer with antlers, DeltaDEER grows something beautiful out of a simple structure. You can find the code for DeltaDEER [here](https://github.com/lorenzoruggerii/muLoop).
 
 ## The Fundamental Tradeoff
 

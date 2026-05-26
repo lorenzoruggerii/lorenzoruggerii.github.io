@@ -23,7 +23,18 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/publications/";
           },
-        },{id: "post-mambacoders-find-interpretable-mamba-feature-circuits",
+        },{id: "post-deltadeer-when-models-wear-antlers",
+        
+          title: "DeltaDEER: When models wear antlers",
+        
+        description: "Using Newton&#39;s method to parallelize nonlinear recurrence of DeltaNet",
+        section: "Posts",
+        handler: () => {
+          
+            window.location.href = "/blog/2026/deltadeer/";
+          
+        },
+      },{id: "post-mambacoders-find-interpretable-mamba-feature-circuits",
         
           title: "Mambacoders find interpretable Mamba feature circuits",
         

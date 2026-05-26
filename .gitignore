@@ -11,3 +11,7 @@ assets/libs/
 node_modules/
 vendor
 .idea
+
+# Deltanet paper
+pararnn/
+NonLinearDeltaNet.pdf

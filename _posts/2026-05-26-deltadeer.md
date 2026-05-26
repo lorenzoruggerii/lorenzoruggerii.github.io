@@ -57,7 +57,7 @@ _styles: >
 ---
 
 <figure>
-  <img src="/assets/img/deltadeer.png" alt="DeltaDEER architecture combining parallel training with efficient inference" style="width: 100%;">
+  <img src="/assets/img/deltadeer/deltadeer.png" alt="DeltaDEER architecture combining parallel training with efficient inference" style="width: 100%;">
   <figcaption>
     <strong>DeltaDEER: when models wear antlers.</strong>
   </figcaption>
